@@ -1,8 +1,17 @@
 import AppClient, { PartialSignature } from './lib/appClient';
 import {
+  computeLeafHash,
+  signMessageECDSA,
+  signPsbt,
+  slashingPathPolicy,
+  stakingTxPolicy,
+  timelockPathPolicy,
+  unbondingPathPolicy,
+} from './lib/babylon';
+import {
   DefaultDescriptorTemplate,
   DefaultWalletPolicy,
-  WalletPolicy
+  WalletPolicy,
 } from './lib/policy';
 import { PsbtV2 } from './lib/psbtv2';
 
@@ -12,7 +21,14 @@ export {
   DefaultDescriptorTemplate,
   DefaultWalletPolicy,
   PartialSignature,
-  WalletPolicy
+  WalletPolicy,
+  signMessageECDSA,
+  computeLeafHash,
+  slashingPathPolicy,
+  unbondingPathPolicy,
+  timelockPathPolicy,
+  stakingTxPolicy,
+  signPsbt
 };
 
 export default AppClient;
