@@ -6,6 +6,7 @@ import {
   slashingPathPolicy,
   stakingTxPolicy,
   timelockPathPolicy,
+  tryParsePsbt,
   unbondingPathPolicy,
 } from './lib/babylon';
 import {
@@ -28,7 +29,8 @@ export {
   unbondingPathPolicy,
   timelockPathPolicy,
   stakingTxPolicy,
-  signPsbt
+  signPsbt,
+  tryParsePsbt,
 };
 
 export default AppClient;
