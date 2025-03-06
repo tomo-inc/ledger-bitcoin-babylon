@@ -9,6 +9,11 @@ import AppClient from './appClient';
 import { WalletPolicy } from './policy';
 import { getLeafHash, getTaprootScript } from './psbt';
 import { createExtendedPubkey } from './xpub';
+import { AddressType, MessageSigningProtocols, SignedMessage } from './types';
+import {
+  createTaprootBip322Signature,
+  createSegwitBip322Signature,
+} from './bip322';
 
 enum MagicCode {
   LEAFHASH_DISPLAY_FP = '69846d00',
@@ -66,31 +71,83 @@ export async function signPsbt({
   return transaction;
 }
 
-export enum MessageSigningProtocols {
-  ECDSA = 'ECDSA',
-  BIP322 = 'BIP322',
-}
+export async function signMessage({
+  transport,
+  message,
+  type = 'ecdsa',
+  addressType = AddressType.p2tr,
+  derivationPath = `m/86'/0'/0'`,
+  isTestnet = false,
+}: {
+  transport: Transport;
+  message: string;
+  type: 'ecdsa' | 'bip322-simple';
+  addressType: AddressType;
+  derivationPath: string;
+  isTestnet?: boolean;
+}): Promise<SignedMessage> {
+  if (type === 'bip322-simple') {
+    return signMessageBIP322({
+      transport,
+      message,
+      addressType,
+      derivationPath,
+      isTestnet,
+    });
+  }
 
-export type SignedMessage = {
-  signature: string;
-  protocol: MessageSigningProtocols;
-};
+  return signMessageECDSA({ transport, message, derivationPath });
+}
 
 export async function signMessageECDSA({
   transport,
   message,
-  derivationPath = `m/86'/0'/0'/0/0`,
+  derivationPath = `m/86'/0'/0'`,
 }: {
   transport: Transport;
   message: string;
   derivationPath: string;
 }): Promise<SignedMessage> {
   const app = new AppClient(transport);
-  const signature = await app.signMessage(Buffer.from(message), derivationPath);
+  const signature = await app.signMessage(
+    Buffer.from(message),
+    `${derivationPath}/0/0`
+  );
   return {
     signature,
     protocol: MessageSigningProtocols.ECDSA,
   };
+}
+
+export async function signMessageBIP322({
+  transport,
+  message,
+  addressType = AddressType.p2tr,
+  derivationPath = `m/86'/0'/0'`,
+  isTestnet = false,
+}: {
+  transport: Transport;
+  message: string;
+  addressType: AddressType;
+  derivationPath: string;
+  isTestnet?: boolean;
+}): Promise<SignedMessage> {
+  const app = new AppClient(transport);
+  if (addressType === AddressType.p2tr) {
+    return createTaprootBip322Signature({
+      message,
+      app,
+      derivationPath,
+      isTestnet,
+    });
+  }
+
+  return createSegwitBip322Signature({
+    message,
+    app,
+    derivationPath,
+    isTestnet,
+  });
 }
 
 export function computeLeafHash(psbt: Uint8Array | string): Buffer {

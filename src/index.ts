@@ -1,7 +1,9 @@
 import AppClient, { PartialSignature } from './lib/appClient';
 import {
   computeLeafHash,
+  signMessage,
   signMessageECDSA,
+  signMessageBIP322,
   signPsbt,
   slashingPathPolicy,
   stakingTxPolicy,
@@ -23,7 +25,9 @@ export {
   DefaultWalletPolicy,
   PartialSignature,
   WalletPolicy,
+  signMessage,
   signMessageECDSA,
+  signMessageBIP322,
   computeLeafHash,
   slashingPathPolicy,
   unbondingPathPolicy,
@@ -32,5 +36,12 @@ export {
   signPsbt,
   tryParsePsbt,
 };
+
+import {
+  AddressType,
+  MessageSigningProtocols,
+  SignedMessage,
+} from './lib/types';
+export { AddressType, MessageSigningProtocols, SignedMessage };
 
 export default AppClient;
