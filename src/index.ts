@@ -41,7 +41,7 @@ import {
   AddressType,
   MessageSigningProtocols,
   SignedMessage,
-} from './lib/types';
+} from './lib/babylon/types';
 export { AddressType, MessageSigningProtocols, SignedMessage };
 
 export default AppClient;

@@ -5,8 +5,8 @@ import Transport from '@ledgerhq/hw-transport';
 import { base64 } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
 
-import AppClient from './appClient';
-import { WalletPolicy } from './policy';
+import AppClient from '../appClient';
+import { WalletPolicy } from '../policy';
 import { getLeafHash, getTaprootScript } from './psbt';
 import { createExtendedPubkey } from './xpub';
 import { AddressType, MessageSigningProtocols, SignedMessage } from './types';
@@ -180,11 +180,41 @@ async function _prepare(
   return [masterFingerPrint, extendedPublicKey];
 }
 
+function _checkCovenantInfo(
+  covenantThreshold: number,
+  covenantPks?: string[]
+): number {
+  if (covenantThreshold < 4) {
+    throw new Error(
+      `Invalid value for covenantThreshold: ${covenantThreshold}. It should be greater than or equal to 4.`
+    );
+  }
+
+  const length = !covenantPks ? 0 : covenantPks!.length;
+  if (length < 4) {
+    throw new Error(
+      `covenantPks must have at least 4 elements. Current length: ${length}`
+    );
+  }
+
+  if (length < covenantThreshold) {
+    throw new Error(
+      `The length of covenantPks (${length}) is less than the required covenantThreshold (${covenantThreshold}).`
+    );
+  }
+
+  if (new Set(covenantPks).size < length) {
+    throw new Error(`All covenantPks must be unique`);
+  }
+
+  return length;
+}
+
 export type SlashingPolicy =
   | undefined
-  | 'Consent to slashing'
-  | 'Stake / Step 1'
-  | 'Stake / Step 2';
+  | 'Slashing consent'
+  | 'Step 1: slashing consent'
+  | 'Step 2: slashing consent';
 export type SlashingParams = {
   leafHash: Buffer;
   finalityProviderPk: string;
@@ -193,7 +223,7 @@ export type SlashingParams = {
 };
 
 export async function slashingPathPolicy({
-  policyName = 'Consent to slashing',
+  policyName = 'Slashing consent',
   transport,
   params,
   derivationPath,
@@ -239,25 +269,7 @@ export async function slashingPathPolicy({
     )}]${_formatKey(finalityProviderPk, isTestnet)}`
   );
 
-  if (covenantThreshold < 1) {
-    throw new Error(
-      `Invalid value for covenantThreshold: ${covenantThreshold}. It should be greater than or equal to 1.`
-    );
-  }
-
-  const length = !covenantPks ? 0 : covenantPks!.length;
-  if (length < 1) {
-    throw new Error(
-      `covenantPks must have at least 1 element. Current length: ${length}`
-    );
-  }
-
-  if (length < covenantThreshold) {
-    throw new Error(
-      `The length of covenantPks (${length}) is less than the required covenantThreshold (${covenantThreshold}).`
-    );
-  }
-
+  const length = _checkCovenantInfo(covenantThreshold, covenantPks);
   for (let index = 0; index < length; index++) {
     const pk = covenantPks![index];
     keys.push(_formatKey(pk, isTestnet));
@@ -323,26 +335,7 @@ export async function unbondingPathPolicy({
     )}]${extendedPublicKey}`
   );
 
-  if (covenantThreshold < 1) {
-    throw new Error(
-      `Invalid value for covenantThreshold: ${covenantThreshold}. It should be greater than or equal to 1.`
-    );
-  }
-
-  const length = !covenantPks ? 0 : covenantPks!.length;
-
-  if (length < 1) {
-    throw new Error(
-      `covenantPks must have at least 1 element. Current length: ${length}`
-    );
-  }
-
-  if (length < covenantThreshold) {
-    throw new Error(
-      `The length of covenantPks (${length}) is less than the required covenantThreshold (${covenantThreshold}).`
-    );
-  }
-
+  const length = _checkCovenantInfo(covenantThreshold, covenantPks);
   for (let index = 0; index < length; index++) {
     const pk = covenantPks![index];
     keys.push(_formatKey(pk, isTestnet));
@@ -413,12 +406,24 @@ export async function timelockPathPolicy({
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
 
+export type StakingTxPolicy = undefined | 'Staking Tx';
+export type StakingTxParams = {
+  timelockBlocks: number;
+  finalityProviderPk: string;
+  covenantThreshold: number;
+  covenantPks?: string[];
+};
+
 export async function stakingTxPolicy({
+  policyName = 'Staking Tx',
   transport,
+  params,
   derivationPath,
   isTestnet = false,
 }: {
+  policyName?: StakingTxPolicy;
   transport: Transport;
+  params: StakingTxParams;
   derivationPath?: string;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
@@ -426,17 +431,42 @@ export async function stakingTxPolicy({
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
 
+  const { timelockBlocks, finalityProviderPk, covenantThreshold, covenantPks } =
+    params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     derivationPath
   );
 
-  return new WalletPolicy('Stake Transfer', 'tr(@0/**)', [
+  const keys: string[] = [];
+  keys.push(
     `[${derivationPath.replace(
       'm/',
       `${masterFingerPrint}/`
-    )}]${extendedPublicKey}`,
-  ]);
+    )}]${extendedPublicKey}`
+  );
+  keys.push(
+    `[${derivationPath.replace(
+      'm/',
+      `${MagicCode.FINALITY_PUB_FP}/`
+    )}]${_formatKey(finalityProviderPk, isTestnet)}`
+  );
+
+  const length = _checkCovenantInfo(covenantThreshold, covenantPks);
+  for (let index = 0; index < length; index++) {
+    const pk = covenantPks![index];
+    keys.push(_formatKey(pk, isTestnet));
+  }
+
+  // "tr(@0/**,and_v(pk_k(staker_pk),and_v(older(timelock_blocks),and_v(pk_k(finalityprovider_pk),multi_a(covenant_threshold, covenant_pk1, ..., covenant_pkn)))))"
+  const descriptorTemplate = `tr(@0/**,and_v(pk_k(@1/**),and_v(older(${timelockBlocks}),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
+    { length },
+    (_, index) => index
+  )
+    .map((n) => `@${3 + n}/**`)
+    .join(',')})))))`;
+
+  return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
 
 const SlashingPathRegexPrefix =
@@ -505,7 +535,7 @@ export async function tryParsePsbt(
 
   const script = getTaprootScript(psbtBase64);
   if (!script) {
-    return stakingTxPolicy({ transport, derivationPath, isTestnet });
+    throw new Error(`No script found in psbt`);
   }
 
   leafHash = leafHash ? leafHash : computeLeafHash(psbtBase64);

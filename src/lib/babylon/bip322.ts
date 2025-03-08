@@ -10,7 +10,7 @@ import {
 import { BIP32Factory } from 'bip32';
 import { encode } from 'varuint-bitcoin';
 
-import AppClient, { DefaultWalletPolicy } from '../';
+import AppClient, { DefaultWalletPolicy } from '../..';
 import {
   MessageSigningProtocols,
   SignedMessage,
