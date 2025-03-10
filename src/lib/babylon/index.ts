@@ -474,7 +474,7 @@ const SlashingPathRegexPrefix =
 const UnbondingPathRegexPrefix =
   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
 const TimelockPathRegex =
-  /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{1,4}) OP_CHECKSEQUENCEVERIFY$/;
+  /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{2,6}) OP_CHECKSEQUENCEVERIFY$/;
 
 function tryParseSlashingPath(decoded: string[]): string[] | void {
   const script = decoded.join(' ');
