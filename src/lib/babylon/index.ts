@@ -458,13 +458,13 @@ export async function stakingTxPolicy({
     keys.push(_formatKey(pk, isTestnet));
   }
 
-  // "tr(@0/**,and_v(pk_k(staker_pk),and_v(older(timelock_blocks),and_v(pk_k(finalityprovider_pk),multi_a(covenant_threshold, covenant_pk1, ..., covenant_pkn)))))"
-  const descriptorTemplate = `tr(@0/**,and_v(pk_k(@1/**),and_v(older(${timelockBlocks}),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
+  // "tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(6,@3/**,@4/**,@5/**,@6/**,@7/**,@8/**,@9/**,@10/**,@11/**))),older(64000)))"
+  const descriptorTemplate = `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
     { length },
     (_, index) => index
   )
     .map((n) => `@${3 + n}/**`)
-    .join(',')})))))`;
+    .join(',')}))),older(${timelockBlocks})))`;
 
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
