@@ -439,6 +439,11 @@ export async function stakingTxPolicy({
   );
 
   const keys: string[] = [];
+  // A placeholder parameter added to facilitate firmware data parsing
+  keys.push(
+    "[69846d00/86'/1'/0']tpubD6NzVbkrYhZ4WLczPJWReQycCJdd6YVWXubbVUFnJ5KgU5MDQrD998ZJLSmaB7GVcCnJSDWprxmrGkJ6SvgQC6QAffVpqSvonXmeizXcrkN"
+  );
+
   keys.push(
     `[${derivationPath.replace(
       'm/',
