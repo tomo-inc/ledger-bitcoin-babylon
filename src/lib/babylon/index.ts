@@ -81,9 +81,9 @@ export async function signMessage({
 }: {
   transport: Transport;
   message: string;
-  type: 'ecdsa' | 'bip322-simple';
-  addressType: AddressType;
-  derivationPath: string;
+  type?: 'ecdsa' | 'bip322-simple';
+  addressType?: AddressType;
+  derivationPath?: string;
   isTestnet?: boolean;
 }): Promise<SignedMessage> {
   if (type === 'bip322-simple') {
