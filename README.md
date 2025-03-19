@@ -27,18 +27,25 @@ $ yarn build
 ## Getting started
 
 ```javascript
-import { AppClient, WalletPolicy } from 'ledger-bitcoin-babylon';
+import AppClient, {
+  DefaultWalletPolicy,
+  tryParsePsbt,
+  slashingPathPolicy,
+  stakingTxPolicy,
+  computeLeafHash,
+  signPsbt,
+  signMessage,
+} from 'ledger-bitcoin-babylon';
 import Transport from '@ledgerhq/hw-transport-node-hid';
 
 // Method 1: Explicitly pass all required parameters to construct the policy.
 async function testStakingStep1(transport: Transport) {
   const psbt = base64.decode(
-    'cHNidP8BAH0CAAAAAZUPGfxRcPueN3/UdNQC64mF3lAumoEi9Gv6AgvbdVycAAAAAAD/////AsQJAAAAAAAAFgAUW+EmJNCKK0JAldfAciHDNFDRS/EEpgAAAAAAACJRICyVutUKY9E6qBjfjktoZBga2/RyCoiq+OPBI1ugik2fAAAAAAABAStQwwAAAAAAACJRIEOj7UvRXfRV9er0SUNeReHNqaiqtOoEhmW60JCFUoUyQhXAUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsCJtgX5iDHD5SbZ6yF5ZRRSk4qMD/f16u7MthJR1dRt6/15ASDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eK0gH5MjVzLmTKwzVprRw9vwQTgsO3dPz7BTO5sx1MKna/mtIAruBQmxbbccmZI4pIJ9uUVSaFmxPJVIerRnJTV8mp8lrCARPDoyqdMgtyGQoEoCCg2zl27zaXJnMljpo4o2Tz3DsLogF5Ic8VbMtOc9Qo+ZbtEbJFMT434nyXisTSzCHspGcuS6IDu5PfyLYYh9dx82MOmmPpfLr8/MeFVqR034OjGg74mcuiBAr69HxP+lbehkENjke6ortvBLYE9OokMjc33cP+CS37ogeacf/XHFA+8uL5G8z8j82nlG9GU87w2fPd4geV7zufC6INIfr3jGdRoNOOa9gCi5B/8H6ahppD/IN9az+N/2EZo2uiD1GZ764/KLuCR2Fjp+RYx61EXZv/sGgtENO9sstB+Ojrog+p2ILUX0BgvbgEIYOCjNh1RPHqmXOA5YbKt31f1phze6VpzAARcgUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsAAAAA='
+    'cHNidP8BAH0CAAAAAZUPGfxRcPueN3/UdNQC64mF3lAumoEi9Gv6AgvbdVycAAAAAAD/////AsQJAAAAAAAAFgAUW+EmJNCKK0JAldfAciHDNFDRS/EEpgAAAAAAACJRICyVutUKY9E6qBjfjktoZBga2/RyCoiq+OPBI1ugik2fAAAAAAABAStQwwAAAAAAACJRIEOj7UvRXfRV9er0SUNeReHNqaiqtOoEhmW60JCFUoUyQhXAUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsCJtgX5iDHD5SbZ6yF5ZRRSk4qMD/f16u7MthJR1dRt6/15ASDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eK0gH5MjVzLmTKwzVprRw9vwQTgsO3dPz7BTO5sx1MKna/mtIAruBQmxbbccmZI4pIJ9uUVSaFmxPJVIerRnJTV8mp8lrCARPDoyqdMgtyGQoEoCCg2zl27zaXJnMljpo4o2Tz3DsLogF5Ic8VbMtOc9Qo+ZbtEbJFMT434nyXisTSzCHspGcuS6IDu5PfyLYYh9dx82MOmmPpfLr8/MeFVqR034OjGg74mcuiBAr69HxP+lbehkENjke6ortvBLYE9OokMjc33cP+CS37ogeacf/XHFA+8uL5G8z8j82nlG9GU87w2fPd4geV7zufC6INIfr3jGdRoNOOa9gCi5B/8H6ahppD/IN9az+N/2EZo2uiD1GZ764/KLuCR2Fjp+RYx61EXZv/sGgtENO9sstB+Ojrog+p2ILUX0BgvbgEIYOCjNh1RPHqmXOA5YbKt31f1phze6VpzAARcgUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsAAAAA=',
   );
 
   const leafHash = computeLeafHash(psbt);
-  const finalityProviderPk =
-    '1f93235732e64cac33569ad1c3dbf041382c3b774fcfb0533b9b31d4c2a76bf9';
+  const finalityProviderPk = '1f93235732e64cac33569ad1c3dbf041382c3b774fcfb0533b9b31d4c2a76bf9';
   const covenantPks = [
     '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
     '113c3a32a9d320b72190a04a020a0db3976ef36972673258e9a38a364f3dc3b0',
@@ -80,10 +87,10 @@ async function testStakingStep2(transport: Transport) {
 }
 
 async function testStakingTx(transport: Transport) {
-  const psbtBase64 = 'cHNidP8BAIkCAAAAAZd78ohF47nbYYlbqpsG1C2SbwFnvX5vlD6YxdwhkQ50AQAAAAD/////AlDDAAAAAAAAIlEgvuEgqB2XZe+afeBe8ZLwNCRA7hqxujxpU15NDJOT+tElQCIAAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlAAAAAAABASsuBCMAAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlARcg3I0vnv8MT0294HCkjjMO/JCLYqdmVo2R5ljyhLMkuHgAAAA=';
+  const psbtBase64 =
+    'cHNidP8BAIkCAAAAAZd78ohF47nbYYlbqpsG1C2SbwFnvX5vlD6YxdwhkQ50AQAAAAD/////AlDDAAAAAAAAIlEgvuEgqB2XZe+afeBe8ZLwNCRA7hqxujxpU15NDJOT+tElQCIAAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlAAAAAAABASsuBCMAAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlARcg3I0vnv8MT0294HCkjjMO/JCLYqdmVo2R5ljyhLMkuHgAAAA=';
 
-  const finalityProviderPk =
-    '1f93235732e64cac33569ad1c3dbf041382c3b774fcfb0533b9b31d4c2a76bf9';
+  const finalityProviderPk = '1f93235732e64cac33569ad1c3dbf041382c3b774fcfb0533b9b31d4c2a76bf9';
   const covenantPks = [
     '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
     '113c3a32a9d320b72190a04a020a0db3976ef36972673258e9a38a364f3dc3b0',
@@ -111,37 +118,38 @@ async function testStakingTx(transport: Transport) {
     isTestnet: true,
   });
 
-  await signPsbt({ transport, psbt: psbtBase64, policy: policy!  });
+  await signPsbt({ transport, psbt: psbtBase64, policy: policy! });
 }
 
 async function main(transport) {
-    const app = new AppClient(transport);
+  const app = new AppClient(transport);
 
-    const fpr = await app.getMasterFingerprint();
-    console.log("Master key fingerprint:", fpr.toString("hex"));
+  const fpr = await app.getMasterFingerprint();
+  console.log('Master key fingerprint:', fpr);
 
-    // ==> Get and display on screen the first taproot address
-    const firstTaprootAccountPubkey = await app.getExtendedPubkey("m/86'/1'/0'");
-    const firstTaprootAccountPolicy = new DefaultWalletPolicy(
-        "tr(@0/**)",
-        `[${fpr}/86'/1'/0']${firstTaprootAccountPubkey}`
-    );
+  // ==> Get and display on screen the first taproot address
+  const firstTaprootAccountPubkey = await app.getExtendedPubkey("m/86'/1'/0'");
+  const firstTaprootAccountPolicy = new DefaultWalletPolicy(
+    'tr(@0/**)',
+    `[${fpr}/86'/1'/0']${firstTaprootAccountPubkey}`,
+  );
 
-    const firstTaprootAccountAddress = await app.getWalletAddress(
-        firstTaprootAccountPolicy,
-        null,
-        0,
-        0,
-        true // show address on the wallet's screen
-    );
+  const firstTaprootAccountAddress = await app.getWalletAddress(
+    firstTaprootAccountPolicy,
+    null,
+    0,
+    0,
+    true, // show address on the wallet's screen
+  );
 
-    console.log("First taproot account receive address:", firstTaprootAccountAddress);
+  console.log('First taproot account receive address:', firstTaprootAccountAddress);
 
-    await testStakingStep1(transport);
-    await testStakingStep2(transport);
-    await testStakingTx(transport);
+  await testStakingStep1(transport);
+  await testStakingStep2(transport);
+  await signMessage({ transport, message: 'hello world', type: 'ecdsa' });
+  await testStakingTx(transport);
 
-    await transport.close();
+  await transport.close();
 }
 
 Transport.default.create()
