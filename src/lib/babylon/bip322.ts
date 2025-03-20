@@ -10,7 +10,7 @@ import {
 import { BIP32Factory } from 'bip32';
 import { encode } from 'varuint-bitcoin';
 
-import AppClient, { DefaultWalletPolicy } from '../..';
+import AppClient, { WalletPolicy } from '../..';
 import {
   MessageSigningProtocols,
   SignedMessage,
@@ -40,7 +40,7 @@ export function bip0322Hash(message: string) {
 
 const createMessageSignature = async (
   app: AppClient,
-  accountPolicy: DefaultWalletPolicy,
+  accountPolicy: WalletPolicy,
   message: string,
   witnessScript: Buffer,
   inputArgs:
@@ -165,18 +165,24 @@ export async function createSegwitBip322Signature({
     0,
     isTestnet
   );
+
   const inputDerivation: Bip32Derivation = {
     path: `${derivationPath}/0/0`,
     pubkey: publicKey,
     masterFingerprint: Buffer.from(masterFingerPrint, 'hex'),
   };
-  const accountPolicy = new DefaultWalletPolicy(
+
+  const accountPolicy = new WalletPolicy(
+    'Sign message',
     'wpkh(@0/**)',
-    `[${derivationPath.replace(
-      'm/',
-      `${masterFingerPrint}/`
-    )}]${extendedPublicKey}`
+    [
+      `[${derivationPath.replace(
+        'm/',
+        `${masterFingerPrint}/`
+      )}]${extendedPublicKey}`,
+    ]
   );
+
   return createMessageSignature(
     app,
     accountPolicy,
@@ -237,6 +243,7 @@ export async function createTaprootBip322Signature({
     0,
     isTestnet
   );
+
   // Need to update input derivation path so the ledger can recognize the inputs to sign
   const inputDerivation: TapBip32Derivation = {
     path: `${derivationPath}/0/0`,
@@ -244,13 +251,14 @@ export async function createTaprootBip322Signature({
     masterFingerprint: Buffer.from(masterFingerPrint, 'hex'),
     leafHashes: [],
   };
-  const accountPolicy = new DefaultWalletPolicy(
-    'tr(@0/**)',
+
+  const accountPolicy = new WalletPolicy('Sign message', 'tr(@0/**)', [
     `[${derivationPath.replace(
       'm/',
       `${masterFingerPrint}/`
-    )}]${extendedPublicKey}`
-  );
+    )}]${extendedPublicKey}`,
+  ]);
+
   return createMessageSignature(
     app,
     accountPolicy,

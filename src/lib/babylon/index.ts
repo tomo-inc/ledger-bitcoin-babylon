@@ -71,22 +71,35 @@ export async function signPsbt({
   return transaction;
 }
 
-export async function signMessage({
-  transport,
-  message,
-  type = 'ecdsa',
-  addressType = AddressType.p2tr,
-  derivationPath = `m/86'/0'/0'`,
-  isTestnet = false,
-}: {
+interface ECDSASignMessageOptions {
   transport: Transport;
   message: string;
-  type?: 'ecdsa' | 'bip322-simple';
+  type?: 'ecdsa';
+  derivationPath?: string;
+}
+
+interface BIP322SimpleSignMessageOptions {
+  transport: Transport;
+  message: string;
+  type: 'bip322-simple';
   addressType?: AddressType;
   derivationPath?: string;
   isTestnet?: boolean;
-}): Promise<SignedMessage> {
-  if (type === 'bip322-simple') {
+}
+
+export async function signMessage(
+  options: ECDSASignMessageOptions | BIP322SimpleSignMessageOptions
+): Promise<SignedMessage> {
+  const derivationPath = options.derivationPath ?? `m/86'/0'/0'`;
+
+  if (options.type === 'bip322-simple') {
+    const {
+      transport,
+      message,
+      addressType = AddressType.p2tr,
+      isTestnet = false,
+    } = options;
+
     return signMessageBIP322({
       transport,
       message,
@@ -96,10 +109,11 @@ export async function signMessage({
     });
   }
 
+  const { transport, message } = options;
   return signMessageECDSA({ transport, message, derivationPath });
 }
 
-export async function signMessageECDSA({
+async function signMessageECDSA({
   transport,
   message,
   derivationPath = `m/86'/0'/0'`,
@@ -119,7 +133,7 @@ export async function signMessageECDSA({
   };
 }
 
-export async function signMessageBIP322({
+async function signMessageBIP322({
   transport,
   message,
   addressType = AddressType.p2tr,
