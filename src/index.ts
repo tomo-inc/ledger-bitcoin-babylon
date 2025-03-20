@@ -1,33 +1,63 @@
 import AppClient, { PartialSignature } from './lib/appClient';
-import {
-  computeLeafHash,
-  signMessage,
-  signMessageECDSA,
-  signMessageBIP322,
-  signPsbt,
-  slashingPathPolicy,
-  stakingTxPolicy,
-  timelockPathPolicy,
-  tryParsePsbt,
-  unbondingPathPolicy,
+
+import type {
+  SlashingPolicy,
+  SlashingParams,
+  StakingTxPolicy,
+  StakingTxParams,
+  TimelockPolicy,
+  TimelockParams,
+  UnbondingPolicy,
+  UnbondingParams,
 } from './lib/babylon';
+
+import type {
+  AddressType,
+  MessageSigningProtocols,
+  SignedMessage,
+} from './lib/babylon/types';
+
 import {
   DefaultDescriptorTemplate,
   DefaultWalletPolicy,
   WalletPolicy,
 } from './lib/policy';
+
+import {
+  computeLeafHash,
+  signMessage,
+  tryParsePsbt,
+  signPsbt,
+  slashingPathPolicy,
+  stakingTxPolicy,
+  timelockPathPolicy,
+  unbondingPathPolicy,
+} from './lib/babylon';
+
 import { PsbtV2 } from './lib/psbtv2';
+
+export {
+  AddressType,
+  SlashingPolicy,
+  SlashingParams,
+  StakingTxPolicy,
+  StakingTxParams,
+  TimelockPolicy,
+  TimelockParams,
+  UnbondingPolicy,
+  UnbondingParams,
+  MessageSigningProtocols,
+  SignedMessage,
+  DefaultDescriptorTemplate,
+  DefaultWalletPolicy,
+  WalletPolicy,
+};
 
 export {
   AppClient,
   PsbtV2,
-  DefaultDescriptorTemplate,
-  DefaultWalletPolicy,
   PartialSignature,
-  WalletPolicy,
   signMessage,
-  signMessageECDSA,
-  signMessageBIP322,
   computeLeafHash,
   slashingPathPolicy,
   unbondingPathPolicy,
@@ -36,12 +66,5 @@ export {
   signPsbt,
   tryParsePsbt,
 };
-
-import {
-  AddressType,
-  MessageSigningProtocols,
-  SignedMessage,
-} from './lib/babylon/types';
-export { AddressType, MessageSigningProtocols, SignedMessage };
 
 export default AppClient;
