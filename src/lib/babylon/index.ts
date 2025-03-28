@@ -9,17 +9,16 @@ import AppClient from '../appClient';
 import { WalletPolicy } from '../policy';
 import { getLeafHash, getTaprootScript } from './psbt';
 import { createExtendedPubkey } from './xpub';
-import { AddressType, MessageSigningProtocols, SignedMessage } from './types';
+import {
+  AddressType,
+  MessageSigningProtocols,
+  SignedMessage,
+  MagicCode,
+} from './types';
 import {
   createTaprootBip322Signature,
   createSegwitBip322Signature,
 } from './bip322';
-
-enum MagicCode {
-  LEAFHASH_DISPLAY_FP = '69846d00',
-  LEAFHASH_CHECK_ONLY_FP = '3b9f9680',
-  FINALITY_PUB_FP = 'ff119473',
-}
 
 export async function signPsbt({
   transport,
