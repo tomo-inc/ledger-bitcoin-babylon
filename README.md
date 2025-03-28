@@ -108,6 +108,7 @@ async function testSlashingScript1(transport: Transport) {
   const leafHash = computeLeafHash(psbt);
   const finalityProviderPk =
     '1f93235732e64cac33569ad1c3dbf041382c3b774fcfb0533b9b31d4c2a76bf9';
+  // keys must be sorted https://github.com/babylonlabs-io/btc-staking-ts/blob/dev/src/staking/stakingScript.ts#L291
   const covenantPks = [
     '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
     // Additional public keys omitted for brevity
@@ -166,6 +167,7 @@ async function testSignECDSAMessage(transport: Transport) {
     message: 'hello world',
     type: 'ecdsa',
     derivationPath: DERIVATION_PATH,
+    isTestnet: IS_TESTNET,
   });
 
   console.log(result);
@@ -197,6 +199,7 @@ async function testStakingTx(transport: Transport) {
     'cHNidP8BAIkCAAAAAZd78ohF47nbYYlbqpsG1C2SbwFnvX5vlD6YxdwhkQ50AQAAAAD/////AlDDAAAAAAAAIlEgvuEgqB2XZe+afeBe8ZLwNCRA7hqxujxpU15NDJOT+tElQCIAAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlAAAAAAABASsuBCMAAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlARcg3I0vnv8MT0294HCkjjMO/JCLYqdmVo2R5ljyhLMkuHgAAAA=';
 
   const finalityProviderPk = '1f93235732e64cac33569ad1c3dbf041382c3b774fcfb0533b9b31d4c2a76bf9';
+  // keys must be sorted https://github.com/babylonlabs-io/btc-staking-ts/blob/dev/src/staking/stakingScript.ts#L291
   const covenantPks = [
     '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
     '113c3a32a9d320b72190a04a020a0db3976ef36972673258e9a38a364f3dc3b0',
