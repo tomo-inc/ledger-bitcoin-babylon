@@ -70,26 +70,41 @@ export async function signPsbt({
   return transaction;
 }
 
-interface ECDSASignMessageOptions {
+interface SignMessageOptions {
   transport: Transport;
   message: string;
-  type?: 'ecdsa';
-  derivationPath?: string;
-}
-
-interface BIP322SimpleSignMessageOptions {
-  transport: Transport;
-  message: string;
-  type: 'bip322-simple';
+  type: 'ecdsa' | 'bip322-simple';
   addressType?: AddressType;
   derivationPath?: string;
   isTestnet?: boolean;
 }
 
+function validadteAddress(input: string): Uint8Array | void {
+  try {
+    const bytes = Uint8Array.from(
+      input.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+    );
+
+    if (bytes.length === 20) {
+      return bytes;
+    }
+
+    return;
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+}
+
 export async function signMessage(
-  options: ECDSASignMessageOptions | BIP322SimpleSignMessageOptions
+  options: SignMessageOptions
 ): Promise<SignedMessage> {
   const derivationPath = options.derivationPath ?? `m/86'/0'/0'`;
+
+  const result = validadteAddress(options.message);
+  if (!result) {
+    throw new Error('The message should be a valid address.');
+  }
 
   if (options.type === 'bip322-simple') {
     const {
@@ -109,7 +124,11 @@ export async function signMessage(
   }
 
   const { transport, message } = options;
-  return signMessageECDSA({ transport, message, derivationPath });
+  return signMessageECDSA({
+    transport,
+    message,
+    derivationPath,
+  });
 }
 
 async function signMessageECDSA({

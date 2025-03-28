@@ -11,11 +11,13 @@ import { BIP32Factory } from 'bip32';
 import { encode } from 'varuint-bitcoin';
 
 import AppClient, { WalletPolicy } from '../..';
+import { formatKey } from './';
 import {
   MessageSigningProtocols,
   SignedMessage,
   Bip32Derivation,
   TapBip32Derivation,
+  MagicCode,
 } from './types';
 
 const bip32 = BIP32Factory(ecc);
@@ -172,16 +174,12 @@ export async function createSegwitBip322Signature({
     masterFingerprint: Buffer.from(masterFingerPrint, 'hex'),
   };
 
-  const accountPolicy = new WalletPolicy(
-    'Sign message',
-    'wpkh(@0/**)',
-    [
-      `[${derivationPath.replace(
-        'm/',
-        `${masterFingerPrint}/`
-      )}]${extendedPublicKey}`,
-    ]
-  );
+  const accountPolicy = new WalletPolicy('Sign message', 'wpkh(@0/**)', [
+    `[${derivationPath.replace(
+      'm/',
+      `${masterFingerPrint}/`
+    )}]${extendedPublicKey}`,
+  ]);
 
   return createMessageSignature(
     app,
@@ -225,6 +223,28 @@ function getTaprootAccountDataFromXpub(
   };
 }
 
+function _padHexString(hexString: string): string {
+  const len = hexString.length / 2;
+  const lenHex = len.toString(16).padStart(2, '0');
+  let result = lenHex + hexString;
+  const padNeeded = 64 - result.length;
+  if (padNeeded > 0) {
+    result += 'fc'.repeat(padNeeded / 2);
+  }
+  return result;
+}
+
+function _formatMessage(data: Uint8Array): string {
+  let hexString = '';
+  for (let i = 0; i < data.length; i += 2) {
+    const firstByte = data[i].toString(16).padStart(2, '0');
+    const secondByte =
+      i + 1 < data.length ? data[i + 1].toString(16).padStart(2, '0') : '';
+    hexString += firstByte + secondByte;
+  }
+  return _padHexString(hexString);
+}
+
 export async function createTaprootBip322Signature({
   message,
   app,
@@ -252,12 +272,31 @@ export async function createTaprootBip322Signature({
     leafHashes: [],
   };
 
-  const accountPolicy = new WalletPolicy('Sign message', 'tr(@0/**)', [
-    `[${derivationPath.replace(
-      'm/',
-      `${masterFingerPrint}/`
-    )}]${extendedPublicKey}`,
-  ]);
+  const accountPolicy = new WalletPolicy(
+    'Sign message',
+    'tr(@0/**,and_v(pk_k(@1/**),pk_k(@2/**)))',
+    [
+      `[${derivationPath.replace(
+        'm/',
+        `${masterFingerPrint}/`
+      )}]${extendedPublicKey}`,
+      `[${derivationPath.replace(
+        'm/',
+        `${MagicCode.BIP322_MESSAGE_FP}/`
+      )}]${formatKey(
+        _formatMessage(
+          Uint8Array.from(
+            message.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+          )
+        ),
+        isTestnet
+      )}`,
+      `[${derivationPath.replace(
+        'm/',
+        `${MagicCode.BIP322_TAP_PUBKEY_FP}/`
+      )}]${formatKey(taprootScript.slice(2), isTestnet)}`,
+    ]
+  );
 
   return createMessageSignature(
     app,
