@@ -170,7 +170,7 @@ export function computeLeafHash(psbt: Uint8Array | string): Buffer {
   return getLeafHash(script);
 }
 
-function _formatKey(key: string | Buffer, isTestnet: boolean): string {
+export function formatKey(key: string | Buffer, isTestnet: boolean): string {
   const pubkey =
     key instanceof Buffer ? key : Buffer.from(key as string, 'hex');
   return createExtendedPubkey(
@@ -268,7 +268,7 @@ export async function slashingPathPolicy({
     : MagicCode.LEAFHASH_CHECK_ONLY_FP;
   keys.push(
     `[${derivationPath.replace('m/', `${magicFP}/`)}]` +
-      `${_formatKey(leafHash, isTestnet)}`
+      `${formatKey(leafHash, isTestnet)}`
   );
   keys.push(
     `[${derivationPath.replace(
@@ -280,13 +280,13 @@ export async function slashingPathPolicy({
     `[${derivationPath.replace(
       'm/',
       `${MagicCode.FINALITY_PUB_FP}/`
-    )}]${_formatKey(finalityProviderPk, isTestnet)}`
+    )}]${formatKey(finalityProviderPk, isTestnet)}`
   );
 
   const length = _checkCovenantInfo(covenantThreshold, covenantPks);
   for (let index = 0; index < length; index++) {
     const pk = covenantPks![index];
-    keys.push(_formatKey(pk, isTestnet));
+    keys.push(formatKey(pk, isTestnet));
   }
 
   // "tr(@0/**,and_v(pk_k(staker_pk), and_v(pk_k(finalityprovider_pk),multi_a(covenant_threshold, covenant_pk1, ..., covenant_pkn))))"
@@ -337,7 +337,7 @@ export async function unbondingPathPolicy({
     ? MagicCode.LEAFHASH_DISPLAY_FP
     : MagicCode.LEAFHASH_CHECK_ONLY_FP;
   keys.push(
-    `[${derivationPath.replace('m/', `${magicFP}/`)}]${_formatKey(
+    `[${derivationPath.replace('m/', `${magicFP}/`)}]${formatKey(
       leafHash,
       isTestnet
     )}`
@@ -352,7 +352,7 @@ export async function unbondingPathPolicy({
   const length = _checkCovenantInfo(covenantThreshold, covenantPks);
   for (let index = 0; index < length; index++) {
     const pk = covenantPks![index];
-    keys.push(_formatKey(pk, isTestnet));
+    keys.push(formatKey(pk, isTestnet));
   }
 
   // "tr(@0/**,and_v(pk_k(staker_pk),multi_a(covenant_threshold, covenant_pk1, ..., covenant_pkn)))"
@@ -402,7 +402,7 @@ export async function timelockPathPolicy({
     ? MagicCode.LEAFHASH_DISPLAY_FP
     : MagicCode.LEAFHASH_CHECK_ONLY_FP;
   keys.push(
-    `[${derivationPath.replace('m/', `${magicFP}/`)}]${_formatKey(
+    `[${derivationPath.replace('m/', `${magicFP}/`)}]${formatKey(
       leafHash,
       isTestnet
     )}`
@@ -468,13 +468,13 @@ export async function stakingTxPolicy({
     `[${derivationPath.replace(
       'm/',
       `${MagicCode.FINALITY_PUB_FP}/`
-    )}]${_formatKey(finalityProviderPk, isTestnet)}`
+    )}]${formatKey(finalityProviderPk, isTestnet)}`
   );
 
   const length = _checkCovenantInfo(covenantThreshold, covenantPks);
   for (let index = 0; index < length; index++) {
     const pk = covenantPks![index];
-    keys.push(_formatKey(pk, isTestnet));
+    keys.push(formatKey(pk, isTestnet));
   }
 
   // "tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(6,@3/**,@4/**,@5/**,@6/**,@7/**,@8/**,@9/**,@10/**,@11/**))),older(64000)))"
