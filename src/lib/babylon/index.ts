@@ -197,16 +197,16 @@ function _checkCovenantInfo(
   covenantThreshold: number,
   covenantPks?: string[]
 ): number {
-  if (covenantThreshold < 4) {
+  if (covenantThreshold < 2) {
     throw new Error(
-      `Invalid value for covenantThreshold: ${covenantThreshold}. It should be greater than or equal to 4.`
+      `Invalid value for covenantThreshold: ${covenantThreshold}. It should be greater than or equal to 2.`
     );
   }
 
   const length = !covenantPks ? 0 : covenantPks!.length;
-  if (length < 4) {
+  if (length < 2) {
     throw new Error(
-      `covenantPks must have at least 4 elements. Current length: ${length}`
+      `covenantPks must have at least 2 elements. Current length: ${length}`
     );
   }
 
