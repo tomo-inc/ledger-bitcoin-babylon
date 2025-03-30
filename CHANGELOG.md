@@ -1,3 +1,8 @@
+## [0.2.5] - 2025-03-30
+
+### Fixed
+- The message to sign should be a valid bbn address.
+
 ## [0.2.4] - 2025-03-29
 
 ### Added
