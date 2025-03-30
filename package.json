@@ -34,6 +34,7 @@
     "@bitcoinerlab/secp256k1": "^1.0.5",
     "@cmdcode/buff-utils": "^2.0.0",
     "@cmdcode/tapscript": "^1.5.3",
+    "@cosmjs/encoding": "^0.33.1",
     "@ledgerhq/hw-transport": "6.28.8",
     "@scure/btc-signer": "^1.6.0",
     "bip32-path": "^0.4.2",

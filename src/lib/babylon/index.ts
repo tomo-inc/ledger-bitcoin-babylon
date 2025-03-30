@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 
 import { Script } from '@cmdcode/tapscript';
+import { fromBech32 } from '@cosmjs/encoding';
 import Transport from '@ledgerhq/hw-transport';
 import { base64 } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
@@ -79,20 +80,14 @@ interface SignMessageOptions {
   isTestnet?: boolean;
 }
 
-function validadteAddress(input: string): Uint8Array | void {
+export function validadteAddress(input: string): Uint8Array | void {
   try {
-    const bytes = Uint8Array.from(
-      input.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
-    );
-
-    if (bytes.length === 20) {
-      return bytes;
+    const { prefix, data } = fromBech32(input);
+    if (prefix == 'bbn' && data.length === 20) {
+      return data;
     }
-
-    return;
   } catch (e) {
-    console.error(e);
-    return;
+    //
   }
 }
 
@@ -103,7 +98,7 @@ export async function signMessage(
 
   const result = validadteAddress(options.message);
   if (!result) {
-    throw new Error('The message should be a valid address.');
+    throw new Error('The message should be a valid bbn address.');
   }
 
   if (options.type === 'bip322-simple') {

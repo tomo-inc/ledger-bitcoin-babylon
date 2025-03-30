@@ -11,7 +11,7 @@ import { BIP32Factory } from 'bip32';
 import { encode } from 'varuint-bitcoin';
 
 import AppClient, { WalletPolicy } from '../..';
-import { formatKey } from './';
+import { formatKey, validadteAddress } from './';
 import {
   MessageSigningProtocols,
   SignedMessage,
@@ -272,6 +272,11 @@ export async function createTaprootBip322Signature({
     leafHashes: [],
   };
 
+  const address = validadteAddress(message);
+  if (!address) {
+    throw new Error('The message should be a valid bbn address.');
+  }
+
   const accountPolicy = new WalletPolicy(
     'Sign message',
     'tr(@0/**,and_v(pk_k(@1/**),pk_k(@2/**)))',
@@ -283,14 +288,7 @@ export async function createTaprootBip322Signature({
       `[${derivationPath.replace(
         'm/',
         `${MagicCode.BIP322_MESSAGE_FP}/`
-      )}]${formatKey(
-        _formatMessage(
-          Uint8Array.from(
-            message.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
-          )
-        ),
-        isTestnet
-      )}`,
+      )}]${formatKey(_formatMessage(address), isTestnet)}`,
       `[${derivationPath.replace(
         'm/',
         `${MagicCode.BIP322_TAP_PUBKEY_FP}/`
