@@ -239,9 +239,7 @@ function _checkCovenantInfo(
 
 export type SlashingPolicy =
   | undefined
-  | 'Slashing consent'
-  | 'Step 1: slashing consent'
-  | 'Step 2: slashing consent';
+  | 'Consent to slashing';
 export type SlashingParams = {
   leafHash: Buffer;
   finalityProviderPk: string;
@@ -250,7 +248,7 @@ export type SlashingParams = {
 };
 
 export async function slashingPathPolicy({
-  policyName = 'Slashing consent',
+  policyName = 'Consent to slashing',
   transport,
   params,
   derivationPath,
@@ -313,7 +311,7 @@ export async function slashingPathPolicy({
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
 
-export type UnbondingPolicy = undefined | 'Unbond';
+export type UnbondingPolicy = undefined | 'Unbonding';
 export type UnbondingParams = {
   leafHash: Buffer;
   covenantThreshold: number;
@@ -321,7 +319,7 @@ export type UnbondingParams = {
 };
 
 export async function unbondingPathPolicy({
-  policyName = 'Unbond',
+  policyName = 'Unbonding',
   transport,
   params,
   derivationPath,
