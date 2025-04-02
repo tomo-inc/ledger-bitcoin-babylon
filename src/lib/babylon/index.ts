@@ -501,8 +501,8 @@ export async function stakingTxPolicy({
 
 const SlashingPathRegexPrefix =
   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
-const UnbondingPathRegexPrefix =
-  /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
+// const UnbondingPathRegexPrefix =
+//   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
 const TimelockPathRegex =
   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{2,6}) OP_CHECKSEQUENCEVERIFY$/;
 
@@ -523,24 +523,24 @@ function tryParseSlashingPath(decoded: string[]): string[] | void {
   return result;
 }
 
-function tryParseUnbondingPath(decoded: string[]): string[] | void {
-  const script = decoded.join(' ');
+// function tryParseUnbondingPath(decoded: string[]): string[] | void {
+//   const script = decoded.join(' ');
 
-  if (!UnbondingPathRegexPrefix.test(script)) {
-    return;
-  }
+//   if (!UnbondingPathRegexPrefix.test(script)) {
+//     return;
+//   }
 
-  const result: string[] = [];
-  decoded.forEach((value) => {
-    if (/^([a-f0-9]{64})$/.test(value)) {
-      result.push(value);
-    } else if (/^OP_([0-9]{1,2})$/.test(value)) {
-      result.push(value);
-    }
-  });
+//   const result: string[] = [];
+//   decoded.forEach((value) => {
+//     if (/^([a-f0-9]{64})$/.test(value)) {
+//       result.push(value);
+//     } else if (/^OP_([0-9]{1,2})$/.test(value)) {
+//       result.push(value);
+//     }
+//   });
 
-  return result;
-}
+//   return result;
+// }
 
 function tryParseTimelockPath(decoded: string[]): string[] | void {
   const script = decoded.join(' ');
@@ -586,19 +586,19 @@ export async function tryParsePsbt(
     });
   }
 
-  parsed = tryParseUnbondingPath(decodedScript);
-  if (parsed) {
-    return unbondingPathPolicy({
-      transport,
-      params: {
-        leafHash,
-        covenantPks: parsed.slice(1, parsed.length - 1),
-        covenantThreshold: parseInt(parsed[parsed.length - 1].slice(3), 10),
-      },
-      derivationPath,
-      isTestnet,
-    });
-  }
+  // parsed = tryParseUnbondingPath(decodedScript);
+  // if (parsed) {
+  //   return unbondingPathPolicy({
+  //     transport,
+  //     params: {
+  //       leafHash,
+  //       covenantPks: parsed.slice(1, parsed.length - 1),
+  //       covenantThreshold: parseInt(parsed[parsed.length - 1].slice(3), 10),
+  //     },
+  //     derivationPath,
+  //     isTestnet,
+  //   });
+  // }
 
   parsed = tryParseTimelockPath(decodedScript);
   if (parsed) {
