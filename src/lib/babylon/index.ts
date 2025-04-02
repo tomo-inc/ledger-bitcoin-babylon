@@ -314,6 +314,8 @@ export async function slashingPathPolicy({
 export type UnbondingPolicy = undefined | 'Unbonding';
 export type UnbondingParams = {
   leafHash: Buffer;
+  timelockBlocks: number;
+  finalityProviderPk: string;
   covenantThreshold: number;
   covenantPks?: string[];
 };
@@ -337,7 +339,13 @@ export async function unbondingPathPolicy({
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
 
-  const { leafHash, covenantThreshold, covenantPks } = params;
+  const {
+    leafHash,
+    timelockBlocks,
+    finalityProviderPk,
+    covenantThreshold,
+    covenantPks,
+  } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     derivationPath
@@ -359,6 +367,12 @@ export async function unbondingPathPolicy({
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
+  keys.push(
+    `[${derivationPath.replace(
+      'm/',
+      `${MagicCode.FINALITY_PUB_FP}/`
+    )}]${formatKey(finalityProviderPk, isTestnet)}`
+  );
 
   const length = _checkCovenantInfo(covenantThreshold, covenantPks);
   for (let index = 0; index < length; index++) {
@@ -366,13 +380,12 @@ export async function unbondingPathPolicy({
     keys.push(formatKey(pk, isTestnet));
   }
 
-  // "tr(@0/**,and_v(pk_k(staker_pk),multi_a(covenant_threshold, covenant_pk1, ..., covenant_pkn)))"
-  const descriptorTemplate = `tr(@0/**,and_v(pk_k(@1/**),multi_a(${covenantThreshold},${Array.from(
+  const descriptorTemplate = `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
     { length },
     (_, index) => index
   )
-    .map((n) => `@${2 + n}/**`)
-    .join(',')})))`;
+    .map((n) => `@${3 + n}/**`)
+    .join(',')}))),older(${timelockBlocks})))`;
 
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
