@@ -1,3 +1,12 @@
+## [0.2.7] - 2025-04-02
+
+### Breaking Changes
+- Removed auto-parsing of unbonding path. Now requires additional data beyond PSBT.
+
+### Added
+- Extended `unbondingPathPolicy` with extra parameters to pass finality provider public key and timelock.
+- Updated README with a usage example for `unbondingPathPolicy`.
+
 ## [0.2.6] - 2025-04-01
 
 ### Changed
