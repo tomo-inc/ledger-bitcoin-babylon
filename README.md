@@ -122,7 +122,40 @@ async function testSlashingScript1(transport: Transport) {
   };
 
   const policy: WalletPolicy = await slashingPathPolicy({
-    policyName: 'Consent to slashing',
+    policyName: 'Consent to slashing during unbonding',
+    transport,
+    params,
+    derivationPath: DERIVATION_PATH,
+    isTestnet: IS_TESTNET,
+  });
+
+  await signPsbt({ transport, psbt, policy });
+}
+
+async function testUnbondingScript(transport: Transport) {
+  const psbt = base64.decode(
+    'cHNidP8BAF4CAAAAAdajXvIOyMVu2knpIqn8Z4cB1RGOCjtzVW1vKmKOpcx1AAAAAAD/////AYC7AAAAAAAAIlEgnFilULMWlJWBOW4utZZmFQn5n+nx6SxFU/2uNYB466kAAAAAAAEBK1DDAAAAAAAAIlEgVkKHpDPhbdkKYx0fHmv6lVhBUJ5bodNd3+U54bY9cvZiFcBQkpt0waBJVLeLS2A16XpeB4paDyjsltVHv+6azoA6wPpWf/izaVoDwufHxf/Hlsfg5PxlMSgtzwdIJWBl2Cq6LxMAuyt0TjP/kXX23pW+KgyXYBx2RloUqwUjNLOhChH9VwEgP49Elqc2enw/54+VwIRXiyKOIDJWl8/kI5NrkF96wGKtIAruBQmxbbccmZI4pIJ9uUVSaFmxPJVIerRnJTV8mp8lrCARPDoyqdMgtyGQoEoCCg2zl27zaXJnMljpo4o2Tz3DsLogF5Ic8VbMtOc9Qo+ZbtEbJFMT434nyXisTSzCHspGcuS6IDu5PfyLYYh9dx82MOmmPpfLr8/MeFVqR034OjGg74mcuiBAr69HxP+lbehkENjke6ortvBLYE9OokMjc33cP+CS37ogeacf/XHFA+8uL5G8z8j82nlG9GU87w2fPd4geV7zufC6INIfr3jGdRoNOOa9gCi5B/8H6ahppD/IN9az+N/2EZo2uiD1GZ764/KLuCR2Fjp+RYx61EXZv/sGgtENO9sstB+Ojrog+p2ILUX0BgvbgEIYOCjNh1RPHqmXOA5YbKt31f1phze6VpzAARcgUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsAAAA=='
+  );
+
+  const leafHash = computeLeafHash(psbt);
+  const finalityProviderPk =
+    'd23c2c25e1fcf8fd1c21b9a402c19e2e309e531e45e92fb1e9805b6056b0cc76';
+  // keys must be sorted https://github.com/babylonlabs-io/btc-staking-ts/blob/dev/src/staking/stakingScript.ts#L291
+  const covenantPks = [
+    '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
+    // Additional public keys omitted for brevity
+  ];
+
+  const params: UnbondingParams = {
+    leafHash,
+    timelockBlocks: 64000,
+    finalityProviderPk,
+    covenantThreshold: 6,
+    covenantPks,
+  };
+
+  const policy: WalletPolicy = await unbondingPathPolicy({
+    policyName: 'Unbonding',
     transport,
     params,
     derivationPath: DERIVATION_PATH,
@@ -138,7 +171,7 @@ This method is ideal if you want complete control over each parameter required f
 #### Method 2: Automatically Parse the Policy from the Content of the Provided PSBT
 This method simplifies the process by automatically extracting the required policy information directly from the PSBT content. It is a more streamlined approach—if the PSBT is successfully parsed, the wallet policy is generated automatically.
 
-You can also construct the wallet policies for the unbonding script and the timelock script in this way.
+You can also construct the wallet policies for the slashing script and the timelock script in this way.
 
 ```javascript
 async function testSlashingScript2(transport: Transport) {
