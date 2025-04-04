@@ -1,3 +1,8 @@
+## [0.2.8] - 2025-04-04
+
+### Fixed
+- Resolved timelock encoding parsing issue and ensured compatibility with both supported formats.
+
 ## [0.2.7] - 2025-04-02
 
 ### Breaking Changes
