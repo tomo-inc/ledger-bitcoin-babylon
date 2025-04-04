@@ -517,7 +517,9 @@ const SlashingPathRegexPrefix =
   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
 // const UnbondingPathRegexPrefix =
 //   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
-const TimelockPathRegex =
+const TimelockPathRegex1 =
+  /^([a-f0-9]{64}) OP_CHECKSIGVERIFY OP_(0|[1-9]|1[0-6]) OP_CHECKSEQUENCEVERIFY$/;
+const TimelockPathRegex2 =
   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{2,6}) OP_CHECKSEQUENCEVERIFY$/;
 
 function tryParseSlashingPath(decoded: string[]): string[] | void {
@@ -556,17 +558,27 @@ function tryParseSlashingPath(decoded: string[]): string[] | void {
 //   return result;
 // }
 
+function _tryParseNumber(number: string): string {
+  return number.match(/.{2}/g)!.reverse().join('');
+}
+
 function tryParseTimelockPath(decoded: string[]): string[] | void {
   const script = decoded.join(' ');
 
-  const match = script.match(TimelockPathRegex);
+  let match = script.match(TimelockPathRegex1);
+  if (!!match) {
+    const [_, stakerPK, timelockBlocks] = match;
+    return [stakerPK, Number(timelockBlocks).toString(16)];
+  }
+
+  match = script.match(TimelockPathRegex2);
   if (!match) {
     return;
   }
 
   const [_, stakerPK, timelockBlocks] = match;
 
-  return [stakerPK, timelockBlocks.match(/.{2}/g)!.reverse().join('')];
+  return [stakerPK, _tryParseNumber(timelockBlocks)];
 }
 
 export async function tryParsePsbt(
