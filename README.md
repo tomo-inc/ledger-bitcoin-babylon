@@ -122,7 +122,7 @@ async function testSlashingScript1(transport: Transport) {
   };
 
   const policy: WalletPolicy = await slashingPathPolicy({
-    policyName: 'Consent to slashing during unbonding',
+    policyName: 'Consent to unbonding slashing',
     transport,
     params,
     derivationPath: DERIVATION_PATH,

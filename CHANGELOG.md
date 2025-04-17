@@ -1,3 +1,8 @@
+## [0.2.9] - 2025-04-17
+
+### Changed
+- Updated the policy name for slashing and the app name.
+
 ## [0.2.8] - 2025-04-04
 
 ### Fixed
