@@ -240,7 +240,7 @@ function _checkCovenantInfo(
 export type SlashingPolicy =
   | undefined
   | 'Consent to slashing'
-  | 'Consent to slashing during unbonding';
+  | 'Consent to unbonding slashing';
 export type SlashingParams = {
   leafHash: Buffer;
   finalityProviderPk: string;
