@@ -423,11 +423,11 @@ export class AppClient {
     let network;
     if (appAndVer.name === 'Bitcoin Test') {
       network = networks.testnet;
-    } else if (appAndVer.name === 'Bitcoin Staking') {
+    } else if (appAndVer.name === 'Babylon BTC Staking') {
       network = networks.bitcoin;
     } else {
       throw new Error(
-        `Invalid app: ${appAndVer.name}. Expected 'Bitcoin Test' or 'Bitcoin Staking'.`
+        `Invalid app: ${appAndVer.name}. Expected 'Bitcoin Test' or 'Babylon BTC Staking'.`
       );
     }
     let expression = walletPolicy.descriptorTemplate;
