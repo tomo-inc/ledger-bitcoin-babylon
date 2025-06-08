@@ -8,6 +8,7 @@ import { Transaction } from '@scure/btc-signer';
 
 import AppClient from '../appClient';
 import { WalletPolicy } from '../policy';
+import { numberToLE } from '../buffertools';
 import { getLeafHash, getTaprootScript } from './psbt';
 import { createExtendedPubkey } from './xpub';
 import {
@@ -207,6 +208,16 @@ async function _prepare(
   return [masterFingerPrint, extendedPublicKey];
 }
 
+function _filterFinalityProviders(finalityProviders?: string[]): string[] {
+  const length = !finalityProviders ? 0 : finalityProviders!.length;
+
+  if (length !== 1) {
+    throw new Error(`Currently only a single finality provider is supported.`);
+  }
+
+  return [finalityProviders.shift()];
+}
+
 function _checkCovenantInfo(
   covenantThreshold: number,
   covenantPks?: string[]
@@ -243,9 +254,12 @@ export type SlashingPolicy =
   | 'Consent to unbonding slashing';
 export type SlashingParams = {
   leafHash: Buffer;
-  finalityProviderPk: string;
+  timelockBlocks: number;
+  finalityProviders: string[];
   covenantThreshold: number;
   covenantPks?: string[];
+  slashingPkScriptHex: string;
+  slashingFeeSat: number;
 };
 
 export async function slashingPathPolicy({
@@ -267,8 +281,15 @@ export async function slashingPathPolicy({
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
 
-  const { leafHash, finalityProviderPk, covenantThreshold, covenantPks } =
-    params;
+  const {
+    leafHash,
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    covenantPks,
+    slashingPkScriptHex,
+    slashingFeeSat,
+  } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     derivationPath
@@ -288,6 +309,9 @@ export async function slashingPathPolicy({
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
+
+  const finalityProviderPk =
+    _filterFinalityProviders(finalityProviders).shift();
   keys.push(
     `[${derivationPath.replace(
       'm/',
@@ -301,13 +325,17 @@ export async function slashingPathPolicy({
     keys.push(formatKey(pk, isTestnet));
   }
 
-  // "tr(@0/**,and_v(pk_k(staker_pk), and_v(pk_k(finalityprovider_pk),multi_a(covenant_threshold, covenant_pk1, ..., covenant_pkn))))"
-  const descriptorTemplate = `tr(@0/**,and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
-    { length },
-    (_, index) => index
-  )
-    .map((n) => `@${3 + n}/**`)
-    .join(',')}))))`;
+  keys.push(formatKey(slashingPkScriptHex, isTestnet));
+  keys.push(formatKey(numberToLE(slashingFeeSat), isTestnet));
+
+  const descriptorTemplate =
+    `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
+      { length },
+      (_, index) => index
+    )
+      .map((n) => `@${3 + n}/**`)
+      .join(',')}` +
+    `,@${3 + length}/**,@${3 + length + 1}/**))),older(${timelockBlocks})))`;
 
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
@@ -316,9 +344,10 @@ export type UnbondingPolicy = undefined | 'Unbonding';
 export type UnbondingParams = {
   leafHash: Buffer;
   timelockBlocks: number;
-  finalityProviderPk: string;
+  finalityProviders: string[];
   covenantThreshold: number;
   covenantPks?: string[];
+  unbondingFeeSat: number;
 };
 
 export async function unbondingPathPolicy({
@@ -343,9 +372,10 @@ export async function unbondingPathPolicy({
   const {
     leafHash,
     timelockBlocks,
-    finalityProviderPk,
+    finalityProviders,
     covenantThreshold,
     covenantPks,
+    unbondingFeeSat,
   } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
@@ -368,6 +398,9 @@ export async function unbondingPathPolicy({
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
+
+  const finalityProviderPk =
+    _filterFinalityProviders(finalityProviders).shift();
   keys.push(
     `[${derivationPath.replace(
       'm/',
@@ -381,12 +414,15 @@ export async function unbondingPathPolicy({
     keys.push(formatKey(pk, isTestnet));
   }
 
-  const descriptorTemplate = `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
-    { length },
-    (_, index) => index
-  )
-    .map((n) => `@${3 + n}/**`)
-    .join(',')}))),older(${timelockBlocks})))`;
+  keys.push(formatKey(numberToLE(unbondingFeeSat), isTestnet));
+
+  const descriptorTemplate =
+    `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
+      { length },
+      (_, index) => index
+    )
+      .map((n) => `@${3 + n}/**`)
+      .join(',')}` + `,@${3 + length}/**))),older(${timelockBlocks})))`;
 
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
@@ -448,7 +484,7 @@ export async function timelockPathPolicy({
 export type StakingTxPolicy = undefined | 'Staking transaction';
 export type StakingTxParams = {
   timelockBlocks: number;
-  finalityProviderPk: string;
+  finalityProviders: string[];
   covenantThreshold: number;
   covenantPks?: string[];
 };
@@ -470,7 +506,7 @@ export async function stakingTxPolicy({
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
 
-  const { timelockBlocks, finalityProviderPk, covenantThreshold, covenantPks } =
+  const { timelockBlocks, finalityProviders, covenantThreshold, covenantPks } =
     params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
@@ -489,6 +525,9 @@ export async function stakingTxPolicy({
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
+
+  const finalityProviderPk =
+    _filterFinalityProviders(finalityProviders).shift();
   keys.push(
     `[${derivationPath.replace(
       'm/',
@@ -513,8 +552,8 @@ export async function stakingTxPolicy({
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
 
-const SlashingPathRegexPrefix =
-  /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
+// const SlashingPathRegexPrefix =
+//   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
 // const UnbondingPathRegexPrefix =
 //   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{64}) OP_CHECKSIG/;
 const TimelockPathRegex1 =
@@ -522,22 +561,22 @@ const TimelockPathRegex1 =
 const TimelockPathRegex2 =
   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY ([a-f0-9]{2,6}) OP_CHECKSEQUENCEVERIFY$/;
 
-function tryParseSlashingPath(decoded: string[]): string[] | void {
-  const script = decoded.join(' ');
+// function tryParseSlashingPath(decoded: string[]): string[] | void {
+//   const script = decoded.join(' ');
 
-  if (!SlashingPathRegexPrefix.test(script)) return;
+//   if (!SlashingPathRegexPrefix.test(script)) return;
 
-  const result: string[] = [];
-  decoded.forEach((value) => {
-    if (/^([a-f0-9]{64})$/.test(value)) {
-      result.push(value);
-    } else if (/^OP_([0-9]{1,2})$/.test(value)) {
-      result.push(value);
-    }
-  });
+//   const result: string[] = [];
+//   decoded.forEach((value) => {
+//     if (/^([a-f0-9]{64})$/.test(value)) {
+//       result.push(value);
+//     } else if (/^OP_([0-9]{1,2})$/.test(value)) {
+//       result.push(value);
+//     }
+//   });
 
-  return result;
-}
+//   return result;
+// }
 
 // function tryParseUnbondingPath(decoded: string[]): string[] | void {
 //   const script = decoded.join(' ');
@@ -597,20 +636,20 @@ export async function tryParsePsbt(
   leafHash = leafHash ? leafHash : computeLeafHash(psbtBase64);
 
   const decodedScript = Script.decode(script!);
-  let parsed = tryParseSlashingPath(decodedScript);
-  if (parsed) {
-    return slashingPathPolicy({
-      transport,
-      params: {
-        leafHash,
-        finalityProviderPk: parsed[1],
-        covenantPks: parsed.slice(2, parsed.length - 1),
-        covenantThreshold: parseInt(parsed[parsed.length - 1].slice(3), 10),
-      },
-      derivationPath,
-      isTestnet,
-    });
-  }
+  // let parsed = tryParseSlashingPath(decodedScript);
+  // if (parsed) {
+  //   return slashingPathPolicy({
+  //     transport,
+  //     params: {
+  //       leafHash,
+  //       finalityProviders: [parsed[1]],
+  //       covenantPks: parsed.slice(2, parsed.length - 1),
+  //       covenantThreshold: parseInt(parsed[parsed.length - 1].slice(3), 10),
+  //     },
+  //     derivationPath,
+  //     isTestnet,
+  //   });
+  // }
 
   // parsed = tryParseUnbondingPath(decodedScript);
   // if (parsed) {
@@ -626,7 +665,7 @@ export async function tryParsePsbt(
   //   });
   // }
 
-  parsed = tryParseTimelockPath(decodedScript);
+  const parsed = tryParseTimelockPath(decodedScript);
   if (parsed) {
     return timelockPathPolicy({
       transport,

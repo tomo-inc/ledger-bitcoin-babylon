@@ -31,6 +31,33 @@ export function unsafeFrom64bitLE(byteArray: Buffer): number {
   return value;
 }
 
+export function numberToLE(value: number, byteLen: number): Buffer {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new RangeError('value must be a non-negative integer');
+  }
+
+  if (!Number.isInteger(byteLen) || byteLen < 1) {
+    throw new RangeError('byteLen must be a positive integer');
+  }
+
+  const max = Math.pow(256, byteLen);
+  if (value >= max) {
+    throw new RangeError(
+      `value too large to fit in ${byteLen} bytes (max ${max - 1})`
+    );
+  }
+
+  const buf = Buffer.alloc(byteLen);
+
+  let v = value;
+  for (let i = 0; i < byteLen; i++) {
+    buf[i] = v % 256;
+    v = Math.floor(v / 256);
+  }
+
+  return buf;
+}
+
 export class BufferWriter {
   private bufs: Buffer[] = [];
 
