@@ -1,3 +1,24 @@
+## [v0.3.0-alpha.0] - 2025-06-08
+
+### Changed
+- **SlashingParams**
+  - Removed `finalityProviderPk: string`
+  - Added `finalityProviders: string[]`
+  - Added `timelockBlocks: number`
+  - Added `slashingPkScriptHex: string`
+  - Added `slashingFeeSat: number`
+
+- **UnbondingParams**
+  - Removed `finalityProviderPk: string`
+  - Added `finalityProviders: string[]`
+  - Added `timelockBlocks: number`
+  - Added `unbondingFeeSat: number`
+
+- **StakingTxParams**
+  - Removed `finalityProviderPk: string`
+  - Added `finalityProviders: string[]`
+  - Added `timelockBlocks: number`
+
 ## [0.2.9] - 2025-04-17
 
 ### Changed
