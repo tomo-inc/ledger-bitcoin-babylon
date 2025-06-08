@@ -1,6 +1,6 @@
 {
   "name": "ledger-bitcoin-babylon",
-  "version": "0.2.9",
+  "version": "v0.3.0-alpha.0",
   "description": "Ledger Hardware Wallet Babylon Application Client",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
