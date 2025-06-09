@@ -31,7 +31,7 @@ export function unsafeFrom64bitLE(byteArray: Buffer): number {
   return value;
 }
 
-export function numberToLE(value: number, byteLen: number): Buffer {
+export function numberToLE(value: number, byteLen: number = 32): Buffer {
   if (!Number.isInteger(value) || value < 0) {
     throw new RangeError('value must be a non-negative integer');
   }
