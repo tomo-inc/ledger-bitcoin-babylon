@@ -1,3 +1,8 @@
+## [v0.3.0-alpha.1] - 2025-06-11
+
+### Changed
+- Moved `bitcoinjs-lib` from `dependencies` to `peerDependencies`
+
 ## [v0.3.0-alpha.0] - 2025-06-08
 
 ### Changed
