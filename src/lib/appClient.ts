@@ -151,7 +151,7 @@ export class AppClient {
    */
   async getExtendedPubkey(
     path: string,
-    display: boolean = false
+    display = false
   ): Promise<string> {
     const pathElements = pathStringToArray(path);
     if (pathElements.length > 6) {
@@ -420,7 +420,7 @@ export class AppClient {
     if (addressIndex < 0 || !Number.isInteger(addressIndex))
       throw new Error('Invalid address index');
     const appAndVer = await this.getAppAndVersion();
-    let network;
+    let network: networks.Network;
     if (appAndVer.name === 'Bitcoin Test') {
       network = networks.testnet;
     } else if (appAndVer.name === 'Babylon BTC Staking') {

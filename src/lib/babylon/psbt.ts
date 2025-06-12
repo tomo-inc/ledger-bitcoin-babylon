@@ -1,11 +1,11 @@
 import * as crypto from 'crypto';
 
-import * as bitcoin from 'bitcoinjs-lib';
+import { Psbt } from 'bitcoinjs-lib';
 
 export function getTaprootScript(base64PSBT: string): Buffer | undefined {
   const psbtBuffer = Buffer.from(base64PSBT, 'base64');
 
-  const psbt = bitcoin.Psbt.fromBuffer(psbtBuffer);
+  const psbt = Psbt.fromBuffer(psbtBuffer);
 
   for (const input of psbt.data.inputs) {
     // console.log(input);
