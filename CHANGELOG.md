@@ -1,3 +1,13 @@
+# Changelog
+
+## [v0.3.0-alpha.2] - 2025-06-12
+
+### Changed
+- Updated TypeScript configuration for better type checking and module resolution
+
+### Fixed
+- Moved bitcoinjs to peer dependency
+
 ## [v0.3.0-alpha.1] - 2025-06-11
 
 ### Changed
