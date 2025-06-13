@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.3.0-alpha.3] - 2025-06-13
+
+### Fixed
+- Updated testnet app name check from 'Bitcoin Test' to 'Babylon BTC Test'
+
 ## [v0.3.0-alpha.2] - 2025-06-12
 
 ### Changed
