@@ -421,7 +421,7 @@ export class AppClient {
       throw new Error('Invalid address index');
     const appAndVer = await this.getAppAndVersion();
     let network: networks.Network;
-    if (appAndVer.name === 'Bitcoin Test') {
+    if (appAndVer.name === 'Babylon BTC Test') {
       network = networks.testnet;
     } else if (appAndVer.name === 'Babylon BTC Staking') {
       network = networks.bitcoin;
