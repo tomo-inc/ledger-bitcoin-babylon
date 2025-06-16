@@ -221,7 +221,7 @@ function _filterFinalityProviders(finalityProviders?: string[]): string[] {
 function _checkCovenantInfo(
   covenantThreshold: number,
   covenantPks?: string[]
-): number {
+): string[] {
   if (covenantThreshold < 2) {
     throw new Error(
       `Invalid value for covenantThreshold: ${covenantThreshold}. It should be greater than or equal to 2.`
@@ -245,7 +245,10 @@ function _checkCovenantInfo(
     throw new Error(`All covenantPks must be unique`);
   }
 
-  return length;
+  return covenantPks
+    .map((pk: string) => Buffer.from(pk, 'hex'))
+    .sort(Buffer.compare)
+    .map((pk: Buffer) => pk.toString('hex')) as string[];
 }
 
 export type SlashingPolicy =
@@ -286,7 +289,7 @@ export async function slashingPathPolicy({
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
-    covenantPks,
+    covenantPks: _covenantPks,
     slashingPkScriptHex,
     slashingFeeSat,
   } = params;
@@ -319,12 +322,13 @@ export async function slashingPathPolicy({
     )}]${formatKey(finalityProviderPk, isTestnet)}`
   );
 
-  const length = _checkCovenantInfo(covenantThreshold, covenantPks);
+  const covenantPks = _checkCovenantInfo(covenantThreshold, _covenantPks);
+
+  const length = covenantPks.length;
   for (let index = 0; index < length; index++) {
-    const pk = covenantPks![index];
+    const pk = covenantPks[index];
     keys.push(formatKey(pk, isTestnet));
   }
-
   keys.push(formatKey(slashingPkScriptHex, isTestnet));
   keys.push(formatKey(numberToLE(slashingFeeSat), isTestnet));
 
@@ -374,7 +378,7 @@ export async function unbondingPathPolicy({
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
-    covenantPks,
+    covenantPks: _covenantPks,
     unbondingFeeSat,
   } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
@@ -408,9 +412,11 @@ export async function unbondingPathPolicy({
     )}]${formatKey(finalityProviderPk, isTestnet)}`
   );
 
-  const length = _checkCovenantInfo(covenantThreshold, covenantPks);
+  const covenantPks = _checkCovenantInfo(covenantThreshold, _covenantPks);
+
+  const length = covenantPks.length;
   for (let index = 0; index < length; index++) {
-    const pk = covenantPks![index];
+    const pk = covenantPks[index];
     keys.push(formatKey(pk, isTestnet));
   }
 
@@ -506,8 +512,12 @@ export async function stakingTxPolicy({
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
 
-  const { timelockBlocks, finalityProviders, covenantThreshold, covenantPks } =
-    params;
+  const {
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    covenantPks: _covenantPks,
+  } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     derivationPath
@@ -535,9 +545,11 @@ export async function stakingTxPolicy({
     )}]${formatKey(finalityProviderPk, isTestnet)}`
   );
 
-  const length = _checkCovenantInfo(covenantThreshold, covenantPks);
+  const covenantPks = _checkCovenantInfo(covenantThreshold, _covenantPks);
+
+  const length = covenantPks.length;
   for (let index = 0; index < length; index++) {
-    const pk = covenantPks![index];
+    const pk = covenantPks[index];
     keys.push(formatKey(pk, isTestnet));
   }
 
