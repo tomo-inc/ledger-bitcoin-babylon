@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.3.0-alpha.4] - 2025-06-16
+
+### Fixed
+- Updated error message to use correct app name 'Babylon BTC Test'
+- Added padding to the slashing public key script hex to ensure it's 64 characters long
+- Sorted covenantPks
+
 ## [v0.3.0-alpha.3] - 2025-06-13
 
 ### Fixed
