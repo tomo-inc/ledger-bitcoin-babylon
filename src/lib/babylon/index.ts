@@ -329,7 +329,7 @@ export async function slashingPathPolicy({
     const pk = covenantPks[index];
     keys.push(formatKey(pk, isTestnet));
   }
-  keys.push(formatKey(slashingPkScriptHex, isTestnet));
+  keys.push(formatKey(slashingPkScriptHex.padEnd(64, '0'), isTestnet));
   keys.push(formatKey(numberToLE(slashingFeeSat), isTestnet));
 
   const descriptorTemplate =
