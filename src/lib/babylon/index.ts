@@ -209,9 +209,11 @@ async function _prepare(
 }
 
 function _filterFinalityProviders(finalityProviders?: string[]): string[] {
-  const length = !finalityProviders ? 0 : finalityProviders!.length;
+  if (!finalityProviders || finalityProviders.length === 0) {
+    throw new Error('Must provide at least one finality provider.');
+  }
 
-  if (length !== 1) {
+  if (finalityProviders.length > 1) {
     throw new Error(`Currently only a single finality provider is supported.`);
   }
 
