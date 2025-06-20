@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.3.0-alpha.5] - 2025-06-20
+
+### Fixed
+- Better finality provider error message with more descriptive information
+- Fixed lint issues and ensured method inputs are not mutated
+
 ## [v0.3.0-alpha.4] - 2025-06-16
 
 ### Fixed
