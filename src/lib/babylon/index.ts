@@ -7,20 +7,21 @@ import { base64 } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
 
 import AppClient from '../appClient';
-import { WalletPolicy } from '../policy';
 import { numberToLE } from '../buffertools';
+import { WalletPolicy } from '../policy';
+
+import {
+  createSegwitBip322Signature,
+  createTaprootBip322Signature,
+} from './bip322';
 import { getLeafHash, getTaprootScript } from './psbt';
-import { createExtendedPubkey } from './xpub';
 import {
   AddressType,
+  MagicCode,
   MessageSigningProtocols,
   SignedMessage,
-  MagicCode,
 } from './types';
-import {
-  createTaprootBip322Signature,
-  createSegwitBip322Signature,
-} from './bip322';
+import { createExtendedPubkey } from './xpub';
 
 export async function signPsbt({
   transport,
@@ -50,7 +51,7 @@ export async function signPsbt({
             [
               {
                 pubKey: signature[1].pubkey,
-                leafHash: signature[1].tapleafHash!,
+                leafHash: signature[1].tapleafHash,
               },
               signature[1].signature,
             ],
@@ -180,7 +181,10 @@ async function signMessageBIP322({
 
 export function computeLeafHash(psbt: Uint8Array | string): Buffer {
   const psbtBase64 = psbt instanceof Uint8Array ? base64.encode(psbt) : psbt;
-  const script = getTaprootScript(psbtBase64)!;
+  const script = getTaprootScript(psbtBase64);
+  if (!script) {
+    throw new Error('The psbt does not contain a taproot script.');
+  }
   return getLeafHash(script);
 }
 
@@ -208,14 +212,17 @@ async function _prepare(
   return [masterFingerPrint, extendedPublicKey];
 }
 
-function _filterFinalityProviders(finalityProviders?: string[]): string[] {
-  const length = !finalityProviders ? 0 : finalityProviders!.length;
+// Only a single finality provider is supported for now.
+function _filterFinalityProviders(finalityProviders?: string[]): string {
+  if (!finalityProviders || finalityProviders.length === 0) {
+    throw new Error('Must provide at least one finality provider.');
+  }
 
-  if (length !== 1) {
+  if (finalityProviders.length > 1) {
     throw new Error(`Currently only a single finality provider is supported.`);
   }
 
-  return [finalityProviders.shift()];
+  return finalityProviders[0];
 }
 
 function _checkCovenantInfo(
@@ -228,7 +235,7 @@ function _checkCovenantInfo(
     );
   }
 
-  const length = !covenantPks ? 0 : covenantPks!.length;
+  const length = !covenantPks ? 0 : covenantPks.length;
   if (length < 2) {
     throw new Error(
       `covenantPks must have at least 2 elements. Current length: ${length}`
@@ -314,7 +321,7 @@ export async function slashingPathPolicy({
   );
 
   const finalityProviderPk =
-    _filterFinalityProviders(finalityProviders).shift();
+    _filterFinalityProviders(finalityProviders);
   keys.push(
     `[${derivationPath.replace(
       'm/',
@@ -404,7 +411,7 @@ export async function unbondingPathPolicy({
   );
 
   const finalityProviderPk =
-    _filterFinalityProviders(finalityProviders).shift();
+    _filterFinalityProviders(finalityProviders);
   keys.push(
     `[${derivationPath.replace(
       'm/',
@@ -537,7 +544,7 @@ export async function stakingTxPolicy({
   );
 
   const finalityProviderPk =
-    _filterFinalityProviders(finalityProviders).shift();
+    _filterFinalityProviders(finalityProviders);
   keys.push(
     `[${derivationPath.replace(
       'm/',
@@ -610,15 +617,15 @@ const TimelockPathRegex2 =
 // }
 
 function _tryParseNumber(number: string): string {
-  return number.match(/.{2}/g)!.reverse().join('');
+  return number.match(/.{2}/g)?.reverse().join('') ?? '';
 }
 
 function tryParseTimelockPath(decoded: string[]): string[] | void {
   const script = decoded.join(' ');
 
   let match = script.match(TimelockPathRegex1);
-  if (!!match) {
-    const [_, stakerPK, timelockBlocks] = match;
+  if (match) {
+    const [, stakerPK, timelockBlocks] = match;
     return [stakerPK, Number(timelockBlocks).toString(16)];
   }
 
@@ -647,7 +654,7 @@ export async function tryParsePsbt(
 
   leafHash = leafHash ? leafHash : computeLeafHash(psbtBase64);
 
-  const decodedScript = Script.decode(script!);
+  const decodedScript = Script.decode(script);
   // let parsed = tryParseSlashingPath(decodedScript);
   // if (parsed) {
   //   return slashingPathPolicy({
