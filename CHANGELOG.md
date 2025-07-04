@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.3.0-alpha.6] - 2025-07-04
+
+### Fixed
+- Updated dependencies to resolve security vulnerabilities:
+  - `@ledgerhq/hw-transport-node-speculos-http` updated from `^6.24.1` to `^6.29.7`
+  - `open-cli` updated from `^6.0.1` to `^8.0.0`
+  - `typedoc` updated from `^0.19.0` to `^0.28.7`
+  - Added `axios` resolution to version `1.8.2`
+
 ## [v0.3.0-alpha.5] - 2025-06-20
 
 ### Fixed
