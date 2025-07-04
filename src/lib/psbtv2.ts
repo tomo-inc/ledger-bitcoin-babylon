@@ -354,7 +354,7 @@ export class PsbtV2 {
   }
   serialize(): Buffer {
     const buf = new BufferWriter();
-    buf.writeSlice(Buffer.from([0x70, 0x73, 0x62, 0x74, 0xff]));
+    buf.writeSlice(PSBT_MAGIC_BYTES);
     serializeMap(buf, this.globalMap);
     this.inputMaps.forEach((map) => {
       serializeMap(buf, map);

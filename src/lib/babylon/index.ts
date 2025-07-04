@@ -617,6 +617,9 @@ const TimelockPathRegex2 =
 // }
 
 function _tryParseNumber(number: string): string {
+  if (number.length % 2 !== 0) {
+    throw new Error('Invalid timelock: odd-length hex string');
+  }
   return number.match(/.{2}/g)?.reverse().join('') ?? '';
 }
 
