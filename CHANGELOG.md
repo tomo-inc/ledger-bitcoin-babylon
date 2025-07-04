@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.3.0-alpha.7] - 2025-07-04
+
+### Added
+- Added hex string validation for improved input validation
+- Improved PSBT code maintainability with better code organization
+
 ## [v0.3.0-alpha.6] - 2025-07-04
 
 ### Fixed
