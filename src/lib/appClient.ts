@@ -14,6 +14,7 @@ import { createVarint, parseVarint } from './varint';
 
 const CLA_BTC = 0xe1;
 const CLA_FRAMEWORK = 0xf8;
+const INS_DATA = 0xbb;
 
 const CURRENT_PROTOCOL_VERSION = 1; // supported from version 2.1.0 of the app
 
@@ -77,8 +78,8 @@ export class AppClient {
     this.transport = transport;
   }
 
-  private async makeRequest(
-    ins: BitcoinIns,
+  public async makeRequest(
+    ins: BitcoinIns | number,
     data: Buffer,
     cci?: ClientCommandInterpreter
   ): Promise<Buffer> {
@@ -264,6 +265,17 @@ export class AppClient {
     const address = response.toString('ascii');
     await this.validateAddress(address, walletPolicy, change, addressIndex);
     return address;
+  }
+
+  /**
+   * Prepares data for signing by sending it to the device.
+   * This method uses a custom instruction to send merkleized data.
+   * @param ins the instruction byte to use
+   * @param payload the data payload to send
+   * @returns the complete response including status word
+   */
+  async dataPrepare(payload: Buffer): Promise<Buffer> {
+    return await sendMerkleizedDataWithStatus(this, INS_DATA, payload);
   }
 
   /**
@@ -477,6 +489,74 @@ export class AppClient {
         `Third party address validation mismatch: ${address} != ${thirdPartyGeneratedAddress}`
       );
   }
+}
+export async function sendMerkleizedData(
+  app: { makeRequest: (ins: number, payload: Buffer, interpreter: ClientCommandInterpreter) => Promise<Buffer> },
+  ins: number,
+  payload: Buffer
+): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for (let i = 0; i < payload.length; i += 64) {
+    chunks.push(payload.subarray(i, i + 64));
+  }
+
+  const interpreter = new ClientCommandInterpreter();
+  interpreter.addKnownList(chunks);
+
+  const root = new Merkle(chunks.map((chunk) => hashLeaf(chunk))).getRoot();
+  const header = Buffer.concat([
+    createVarint(payload.length),
+    root,
+  ]);
+
+  return await app.makeRequest(ins, header, interpreter);
+}
+
+export async function sendMerkleizedDataWithStatus(
+  app: AppClient,
+  ins: number,
+  payload: Buffer
+): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for (let i = 0; i < payload.length; i += 64) {
+    chunks.push(payload.subarray(i, i + 64));
+  }
+
+  const interpreter = new ClientCommandInterpreter();
+  interpreter.addKnownList(chunks);
+
+  const root = new Merkle(chunks.map((chunk) => hashLeaf(chunk))).getRoot();
+  const header = Buffer.concat([
+    createVarint(payload.length),
+    root,
+  ]);
+
+  // 直接使用 transport.send，保留状态字
+  let response: Buffer = await app.transport.send(
+    CLA_BTC,
+    ins,
+    0,
+    CURRENT_PROTOCOL_VERSION,
+    header,
+    [0x9000, 0xe000]
+  );
+  
+  while (response.readUInt16BE(response.length - 2) === 0xe000) {
+    const hwRequest = response.slice(0, -2);
+    const commandResponse = interpreter.execute(hwRequest);
+
+    response = await app.transport.send(
+      CLA_FRAMEWORK,
+      FrameworkIns.CONTINUE_INTERRUPTED,
+      0,
+      0,
+      commandResponse,
+      [0x9000, 0xe000]
+    );
+  }
+  
+  // 返回完整响应，包括状态字
+  return response;
 }
 
 export default AppClient;

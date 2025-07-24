@@ -9,6 +9,7 @@ import { Transaction } from '@scure/btc-signer';
 import AppClient from '../appClient';
 import { numberToLE } from '../buffertools';
 import { WalletPolicy } from '../policy';
+import { encodeStakingTxPolicyToTLV } from './data';
 
 import {
   createSegwitBip322Signature,
@@ -518,6 +519,18 @@ export async function stakingTxPolicy({
   derivationPath = derivationPath
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
+    const [masterFingerPrint, extendedPublicKey] = await _prepare(
+    transport,
+    derivationPath
+  );
+  const keys: string[] = [];
+  const descriptorTemplate = "tr(@0/**)";
+   keys.push(
+    `[${derivationPath.replace(
+      'm/',
+      `${masterFingerPrint}/`
+    )}]${extendedPublicKey}`
+  );
 
   const {
     timelockBlocks,
@@ -525,48 +538,21 @@ export async function stakingTxPolicy({
     covenantThreshold,
     covenantPks: _covenantPks,
   } = params;
-  const [masterFingerPrint, extendedPublicKey] = await _prepare(
-    transport,
-    derivationPath
+
+  const tlvBuffer = encodeStakingTxPolicyToTLV(
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    _covenantPks || []
   );
-
-  const keys: string[] = [];
-  // A placeholder parameter added to facilitate firmware data parsing
-  keys.push(
-    "[69846d00/86'/1'/0']tpubD6NzVbkrYhZ4WLczPJWReQycCJdd6YVWXubbVUFnJ5KgU5MDQrD998ZJLSmaB7GVcCnJSDWprxmrGkJ6SvgQC6QAffVpqSvonXmeizXcrkN"
-  );
-
-  keys.push(
-    `[${derivationPath.replace(
-      'm/',
-      `${masterFingerPrint}/`
-    )}]${extendedPublicKey}`
-  );
-
-  const finalityProviderPk =
-    _filterFinalityProviders(finalityProviders);
-  keys.push(
-    `[${derivationPath.replace(
-      'm/',
-      `${MagicCode.FINALITY_PUB_FP}/`
-    )}]${formatKey(finalityProviderPk, isTestnet)}`
-  );
-
-  const covenantPks = _checkCovenantInfo(covenantThreshold, _covenantPks);
-
-  const length = covenantPks.length;
-  for (let index = 0; index < length; index++) {
-    const pk = covenantPks[index];
-    keys.push(formatKey(pk, isTestnet));
+  console.log('stakingTxPolicy TLV buffer:', tlvBuffer.toString('hex'));
+  const app = new AppClient(transport);
+  try {
+    await app.dataPrepare(tlvBuffer);
+  } catch (error) {
+    console.error('Error in dataPrepare:', error);
+    throw error;
   }
-
-  // "tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(6,@3/**,@4/**,@5/**,@6/**,@7/**,@8/**,@9/**,@10/**,@11/**))),older(64000)))"
-  const descriptorTemplate = `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
-    { length },
-    (_, index) => index
-  )
-    .map((n) => `@${3 + n}/**`)
-    .join(',')}))),older(${timelockBlocks})))`;
 
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 }
