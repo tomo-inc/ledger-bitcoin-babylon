@@ -9,7 +9,7 @@ import { Transaction } from '@scure/btc-signer';
 import AppClient from '../appClient';
 import { numberToLE } from '../buffertools';
 import { WalletPolicy } from '../policy';
-import { encodeStakingTxPolicyToTLV } from './data';
+import { encodeStakingTxPolicyToTLV, encodeSlashingTxPolicyToTLV } from './data';
 
 import {
   createSegwitBip322Signature,
@@ -288,68 +288,92 @@ export async function slashingPathPolicy({
   displayLeafHash?: boolean;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
+  console.log('displayLeafHash:', displayLeafHash);
   derivationPath = derivationPath
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
 
   const {
-    leafHash,
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
-    covenantPks: _covenantPks,
-    slashingPkScriptHex,
+    covenantPks: _covenantPks, 
     slashingFeeSat,
   } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     derivationPath
   );
-
   const keys: string[] = [];
-  const magicFP = displayLeafHash
-    ? MagicCode.LEAFHASH_DISPLAY_FP
-    : MagicCode.LEAFHASH_CHECK_ONLY_FP;
-  keys.push(
-    `[${derivationPath.replace('m/', `${magicFP}/`)}]` +
-      `${formatKey(leafHash, isTestnet)}`
-  );
-  keys.push(
+  const descriptorTemplate = "tr(@0/**)";
+   keys.push(
     `[${derivationPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
 
-  const finalityProviderPk =
-    _filterFinalityProviders(finalityProviders);
-  keys.push(
-    `[${derivationPath.replace(
-      'm/',
-      `${MagicCode.FINALITY_PUB_FP}/`
-    )}]${formatKey(finalityProviderPk, isTestnet)}`
+   const tlvBuffer = encodeSlashingTxPolicyToTLV(
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    _covenantPks || [],
+    slashingFeeSat
   );
-
-  const covenantPks = _checkCovenantInfo(covenantThreshold, _covenantPks);
-
-  const length = covenantPks.length;
-  for (let index = 0; index < length; index++) {
-    const pk = covenantPks[index];
-    keys.push(formatKey(pk, isTestnet));
+  console.log('slashingPathPolicy TLV buffer:', tlvBuffer.toString('hex'));
+  const app = new AppClient(transport);
+  try {
+    await app.dataPrepare(tlvBuffer);
+  } catch (error) {
+    console.error('Error in dataPrepare:', error);
+    throw error;
   }
-  keys.push(formatKey(slashingPkScriptHex.padEnd(64, '0'), isTestnet));
-  keys.push(formatKey(numberToLE(slashingFeeSat), isTestnet));
-
-  const descriptorTemplate =
-    `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
-      { length },
-      (_, index) => index
-    )
-      .map((n) => `@${3 + n}/**`)
-      .join(',')}` +
-    `,@${3 + length}/**,@${3 + length + 1}/**))),older(${timelockBlocks})))`;
 
   return new WalletPolicy(policyName, descriptorTemplate, keys);
+
+  // const keys: string[] = [];
+  // const magicFP = displayLeafHash
+  //   ? MagicCode.LEAFHASH_DISPLAY_FP
+  //   : MagicCode.LEAFHASH_CHECK_ONLY_FP;
+  // keys.push(
+  //   `[${derivationPath.replace('m/', `${magicFP}/`)}]` +
+  //     `${formatKey(leafHash, isTestnet)}`
+  // );
+  // keys.push(
+  //   `[${derivationPath.replace(
+  //     'm/',
+  //     `${masterFingerPrint}/`
+  //   )}]${extendedPublicKey}`
+  // );
+
+  // const finalityProviderPk =
+  //   _filterFinalityProviders(finalityProviders);
+  // keys.push(
+  //   `[${derivationPath.replace(
+  //     'm/',
+  //     `${MagicCode.FINALITY_PUB_FP}/`
+  //   )}]${formatKey(finalityProviderPk, isTestnet)}`
+  // );
+
+  // const covenantPks = _checkCovenantInfo(covenantThreshold, _covenantPks);
+
+  // const length = covenantPks.length;
+  // for (let index = 0; index < length; index++) {
+  //   const pk = covenantPks[index];
+  //   keys.push(formatKey(pk, isTestnet));
+  // }
+  // keys.push(formatKey(slashingPkScriptHex.padEnd(64, '0'), isTestnet));
+  // keys.push(formatKey(numberToLE(slashingFeeSat), isTestnet));
+
+  // const descriptorTemplate =
+  //   `tr(@0/**,and_v(and_v(pk_k(@1/**),and_v(pk_k(@2/**),multi_a(${covenantThreshold},${Array.from(
+  //     { length },
+  //     (_, index) => index
+  //   )
+  //     .map((n) => `@${3 + n}/**`)
+  //     .join(',')}` +
+  //   `,@${3 + length}/**,@${3 + length + 1}/**))),older(${timelockBlocks})))`;
+
 }
 
 export type UnbondingPolicy = undefined | 'Unbonding';
