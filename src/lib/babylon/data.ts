@@ -10,8 +10,7 @@ Cov key count:                TAG 0xc0  LEN 00 0n      VALUE count
 Cov key list:                 TAG 0xc1  LEN 32*n       VALUE n pubkey
 staker pk:                    TAG 0x51  LEN 32         VALUE pubkey
 cov quorum:                   TAG 0x01  LEN 00 01      VALUE quorum
-stake timelock:               TAG 0x71  LEN 00 08      VALUE timelock uint64
-unbonding timelock:           TAG 0x72  LEN 00 08      VALUE timelock uint64
+timelock:                     TAG 0x71  LEN 00 08      VALUE timelock uint64
 slashing fee limit:           TAG 0xfe  LEN 00 08      VALUE limit uint64
 unbonding fee limit:          TAG 0xff  LEN 00 08      VALUE limit uint64
 */
@@ -183,7 +182,7 @@ export function encodeSlashingTxPolicyToTLV(
   feeBuffer.writeUInt32BE(fee % 0x100000000, 4); // 低32位
   buffers.push(feeBuffer);
 
-  buffers.push(Buffer.from([0x72])); // TAG
+  buffers.push(Buffer.from([0x71])); // TAG
   buffers.push(Buffer.from([0x00, 0x08])); // LEN (2 bytes)
 
   const timelockBuffer = Buffer.alloc(8);
