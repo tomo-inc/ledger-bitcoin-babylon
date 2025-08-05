@@ -13,6 +13,9 @@ cov quorum:                   TAG 0x01  LEN 00 01      VALUE quorum
 timelock:                     TAG 0x71  LEN 00 08      VALUE timelock uint64
 slashing fee limit:           TAG 0xfe  LEN 00 08      VALUE limit uint64
 unbonding fee limit:          TAG 0xff  LEN 00 08      VALUE limit uint64
+message                       TAG 0x33  LEN 00 XX      VALUE message BUFFER
+txid:                         TAG 0x35  LEN 00 20      VALUE txid BUFFER
+burning address:              TAG 0x36  LEN 00 XX      VALUE address BUFFER
 */
 
 /**
@@ -115,14 +118,15 @@ export function encodeSlashingTxPolicyToTLV(
   finalityProviders: string[],
   covenantThreshold: number,
   covenantPks: string[],
+  slashingPkScriptHex: string,
   fee: number
 ): Buffer {
   const buffers: Buffer[] = [];
 
-  // Action Type: TAG 0x77 LEN 00 01 VALUE action type (3=SLASHING)
+  // Action Type: TAG 0x77 LEN 00 01 VALUE action type (0=SLASHING)
   buffers.push(Buffer.from([0x77])); // TAG
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
-  buffers.push(Buffer.from([0x01])); // VALUE (3 = SLASHING)
+  buffers.push(Buffer.from([0x00])); // VALUE (0 = SLASHING)
 
   // Finality provider count: TAG 0xf9 LEN 00 0n VALUE count
   const fpCount = finalityProviders.length;
@@ -181,6 +185,12 @@ export function encodeSlashingTxPolicyToTLV(
   feeBuffer.writeUInt32BE(Math.floor(fee / 0x100000000), 0); // 高32位
   feeBuffer.writeUInt32BE(fee % 0x100000000, 4); // 低32位
   buffers.push(feeBuffer);
+
+     // Burning address: TAG 0x36 LEN 00 XX VALUE address BUFFER
+  const slashingPkScriptBuffer = Buffer.from(slashingPkScriptHex, 'hex');
+  buffers.push(Buffer.from([0x36])); // TAG
+  buffers.push(Buffer.from([0x00, slashingPkScriptBuffer.length])); // LEN (2 bytes)
+  buffers.push(slashingPkScriptBuffer); // VALUE
 
   buffers.push(Buffer.from([0x71])); // TAG
   buffers.push(Buffer.from([0x00, 0x08])); // LEN (2 bytes)

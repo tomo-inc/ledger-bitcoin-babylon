@@ -298,6 +298,7 @@ export async function slashingPathPolicy({
     finalityProviders,
     covenantThreshold,
     covenantPks: _covenantPks, 
+    slashingPkScriptHex,
     slashingFeeSat,
   } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
@@ -318,6 +319,7 @@ export async function slashingPathPolicy({
     finalityProviders,
     covenantThreshold,
     _covenantPks || [],
+    slashingPkScriptHex,
     slashingFeeSat
   );
   console.log('slashingPathPolicy TLV buffer:', tlvBuffer.toString('hex'));
