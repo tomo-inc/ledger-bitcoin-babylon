@@ -36,11 +36,13 @@
     "@cmdcode/tapscript": "^1.5.3",
     "@cosmjs/encoding": "^0.33.1",
     "@ledgerhq/hw-transport": "6.28.8",
+    "@noble/secp256k1": "^2.3.0",
     "@scure/btc-signer": "^1.6.0",
     "bip32-path": "^0.4.2",
     "crypto": "^1.0.1",
     "ledger-bitcoin": "^0.2.3",
-    "process": "^0.11.10"
+    "process": "^0.11.10",
+    "tiny-secp256k1": "^2.2.4"
   },
   "peerDependencies": {
     "bitcoinjs-lib": "6.1.5"
@@ -50,7 +52,7 @@
     "@ledgerhq/hw-transport-node-speculos-http": "^6.29.7",
     "@ledgerhq/logs": "^6.10.0",
     "@types/jest": "^27.4.0",
-    "@types/node": "^17.0.10",
+    "@types/node": "^24.2.0",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.1",
     "babel-jest": "^29.7.0",

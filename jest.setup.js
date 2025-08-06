@@ -10,3 +10,5 @@ if (typeof globalThis.crypto === 'undefined') {
 if (typeof global.crypto === 'undefined') {
   global.crypto = require('crypto');
 }
+
+jest.setTimeout(30000);

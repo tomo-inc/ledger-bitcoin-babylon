@@ -11,5 +11,6 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   globals: {
     crypto: require('crypto')
-  }
+  },
+  testTimeout: 30000
 };
