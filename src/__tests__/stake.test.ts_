@@ -1,6 +1,6 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
 import { AppClient,DefaultWalletPolicy,PsbtV2 } from '..';
-import { /*stakingTxPolicy, */slashingPathPolicy } from '../lib/babylon/index';
+import { stakingTxPolicy } from '../lib/babylon/index';
 import * as ecc from 'tiny-secp256k1';
 
 describe('stakingTxPolicy', () => {
@@ -17,37 +17,8 @@ describe('stakingTxPolicy', () => {
     setTimeout(() => process.exit(0), 1000);
   });
 
-  // it('should create staking tx policy and send TLV data', async () => {
-  //   const params = {
-  //     timelockBlocks: 64000,
-  //     finalityProviders: ['1f93235732e64cac33569ad1c3dbf041382c3b774fcfb0533b9b31d4c2a76bf9'],
-  //     covenantThreshold: 6,
-  //     covenantPks: [
-  //       '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
-  //       '113c3a32a9d320b72190a04a020a0db3976ef36972673258e9a38a364f3dc3b0',
-  //       '17921cf156ccb4e73d428f996ed11b245313e37e27c978ac4d2cc21eca4672e4',
-  //       '3bb93dfc8b61887d771f3630e9a63e97cbafcfcc78556a474df83a31a0ef899c',
-  //       '40afaf47c4ffa56de86410d8e47baa2bb6f04b604f4ea24323737ddc3fe092df',
-  //       '79a71ffd71c503ef2e2f91bccfc8fcda7946f4653cef0d9f3dde20795ef3b9f0',
-  //       '8c1e7e2b5c6d4f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a',
-  //       '9f8e7d6c5b4a39281716151413121110ffeeddccbbaa99887766554433221100',
-  //       'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-  //     ],
-  //   };
 
-  //   const policy = await stakingTxPolicy({
-  //     policyName: 'Staking transaction',
-  //     transport,
-  //     params,
-  //     derivationPath: `m/86'/1'/0'`,
-  //     isTestnet: true,
-  //   });
-
-  //   expect(policy).toBeDefined();
-  //   expect(policy.descriptorTemplate).toBe('tr(@0/**)');
-  // });
-
-  it('should create slashing tx policy and send TLV data', async () => {
+  it('should send tlv data for stake', async () => {
     const params = {
       timelockBlocks: 1008,
       finalityProviders: ['d66124f8f42fd83e4c901a100ae3b5d706ef6cfd217b04bc64152e739a30c41e'],
@@ -68,8 +39,8 @@ describe('stakingTxPolicy', () => {
       slashingPkScriptHex: "00145be12624d08a2b424095d7c07221c33450d14bf1",
     };
 
-    const policy = await slashingPathPolicy({
-      policyName: 'Consent to slashing',
+    const policy = await stakingTxPolicy({
+      policyName: 'Staking transaction',
       transport,
       params,
       derivationPath: `m/86'/1'/0'`,
@@ -80,7 +51,9 @@ describe('stakingTxPolicy', () => {
     expect(policy).toBeDefined();
     expect(policy.descriptorTemplate).toBe('tr(@0/**)');
   });
-  it("can sign a psbt", async () => {
+
+
+  it("can sign stake", async () => {
     jest.setTimeout(30000);
     // psbt from test_sign_psbt_singlesig_wpkh_2to2 in the main test suite, converted to PSBTv2
     const psbtBuf = Buffer.from(
@@ -108,18 +81,7 @@ describe('stakingTxPolicy', () => {
     // 验证第一个签名结果
     const [idx0, partialSig0] = result[0];
     expect(idx0).toBe(0);
-    
-    // 验证 tapleaf hash (修正属性名)
-    //expect(partialSig0.tapleafHash).toBeDefined();
-    //expect(Buffer.from(partialSig0.tapleafHash!)).toEqual(expectedLeafHash);
-    
-    // 验证 pubkey
-    //expect(partialSig0.pubkey).toBeDefined();
-    //expect(Buffer.from(partialSig0.pubkey)).toEqual(expectedPubkey);
-    
-    // 验证签名长度（Schnorr 签名应该是 64 字节）
-    //expect(partialSig0.signature).toBeDefined();
-    //expect(partialSig0.signature.length).toBeGreaterThanOrEqual(64);
+
 
      // BIP-340 Schnorr 签名验证
    const signature = partialSig0.signature.slice(0, 64); // 取前 64 字节作为签名
