@@ -7,5 +7,10 @@ module.exports = {
   },
   transformIgnorePatterns: [
     "node_modules/(?!(axios)/)"
-  ]
+  ],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  globals: {
+    crypto: require('crypto')
+  },
+  testTimeout: 30000
 };
