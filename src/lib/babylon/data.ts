@@ -1,7 +1,7 @@
 
 /*
 TAG=1 LEN=2 Value
-Action Type:  3=Staking 4=Unbond 1=SLASHING 2=UNBONDING SLASHING
+Action Type:  2=Staking 3=Unbond 0=SLASHING 1=UNBONDING SLASHING
 5=WITHDRAW 6=SIGN MESSAGE
 Action Type:                  TAG 0x77  LEN 00 01      VALUE action type
 Finality provider count:      TAG 0xf9  LEN 00 0n      VALUE count
@@ -40,7 +40,7 @@ export function encodeStakingTxPolicyToTLV(
   // Action Type: TAG 0x77 LEN 00 01 VALUE action type (1=Staking)
   buffers.push(Buffer.from([0x77])); // TAG
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
-  buffers.push(Buffer.from([0x03])); // VALUE (1 = Staking)
+  buffers.push(Buffer.from([0x02])); // VALUE (1 = Staking)
 
   // Finality provider count: TAG 0xf9 LEN 00 0n VALUE count
   const fpCount = finalityProviders.length;
