@@ -25,11 +25,3 @@ export type Bip32Derivation = {
 export interface TapBip32Derivation extends Bip32Derivation {
   leafHashes: Buffer[];
 }
-
-export enum MagicCode {
-  LEAFHASH_DISPLAY_FP = '69846d00',
-  LEAFHASH_CHECK_ONLY_FP = '3b9f9680',
-  FINALITY_PUB_FP = 'ff119473',
-  BIP322_MESSAGE_FP = '83871619',
-  BIP322_TAP_PUBKEY_FP = '25270417',
-}
