@@ -57,7 +57,7 @@ describe('stakingTxPolicy', () => {
     jest.setTimeout(30000);
     // psbt from test_sign_psbt_singlesig_wpkh_2to2 in the main test suite, converted to PSBTv2
     const psbtBuf = Buffer.from(
-       "cHNidP8BAH0CAAAAAU5oPucfQQOAdrEZwJODBvpzHfaA/orEXxwbxelbMexgAAAAAAD/////AsQJAAAAAAAAFgAUW+EmJNCKK0JAldfAciHDNFDRS/EEpgAAAAAAACJRICyVutUKY9E6qBjfjktoZBga2/RyCoiq+OPBI1ugik2fAAAAAAABAStQwwAAAAAAACJRINdj3mtHHjBWQbpB1lxngujLz/bgjoPaqw2hJ1u8n6rQQhXBUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsCJtgX5iDHD5SbZ6yF5ZRRSk4qMD/f16u7MthJR1dRt6/15ASDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eK0g1mEk+PQv2D5MkBoQCuO11wbvbP0hewS8ZBUuc5owxB6tIAruBQmxbbccmZI4pIJ9uUVSaFmxPJVIerRnJTV8mp8lrCARPDoyqdMgtyGQoEoCCg2zl27zaXJnMljpo4o2Tz3DsLogF5Ic8VbMtOc9Qo+ZbtEbJFMT434nyXisTSzCHspGcuS6IDu5PfyLYYh9dx82MOmmPpfLr8/MeFVqR034OjGg74mcuiBAr69HxP+lbehkENjke6ortvBLYE9OokMjc33cP+CS37ogeacf/XHFA+8uL5G8z8j82nlG9GU87w2fPd4geV7zufC6INIfr3jGdRoNOOa9gCi5B/8H6ahppD/IN9az+N/2EZo2uiD1GZ764/KLuCR2Fjp+RYx61EXZv/sGgtENO9sstB+Ojrog+p2ILUX0BgvbgEIYOCjNh1RPHqmXOA5YbKt31f1phze6VpzAARcgUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsAAAAA=",
+       "cHNidP8BAF4CAAAAAeH2BxZtWBxqa5e1h7G0LZ7JANIrlRdqkdyObGHed2D3AAAAAADwAwAAAWC6AAAAAAAAIlEgdA7mTkUuO67hJ7A8GVvMIa0+3e0u8mxa9IPZxWME0eUAAAAAAAEBK4C7AAAAAAAAIlEgBSZ/XUbQ9Yp+rjB4isu1kF9Bxmw5L+EimM9U7tEzOMNCFcFQkpt0waBJVLeLS2A16XpeB4paDyjsltVHv+6azoA6wE/2PBlmrPya/P2SJEn+52lqOKw5Js4JbbljP90EMMqbJyDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eK0C8AOywAEXIFCSm3TBoElUt4tLYDXpel4HiloPKOyW1Ue/7prOgDrAAAA=",
        "base64"
     );
 
@@ -74,8 +74,8 @@ describe('stakingTxPolicy', () => {
     expect(result.length).toEqual(1);
     
     // Python 验证数据
-    const expectedSighash = Buffer.from("BA111E858EED59BA9527273BC8DFB047AE96BE59B6B4EC3769F6C35E5135134C", "hex");
-    const expectedLeafHash = Buffer.from("ed429f93af8bb724a9f5066248b32d945fdd1c12f7f59a33f4f83b6565716750", "hex");
+    const expectedSighash = Buffer.from("5B0C89BF47EEA206B8512E2386278ECD8588CA6EF0C4D460DDAE57A0BC53F571", "hex");
+    const expectedLeafHash = Buffer.from("28be7913bb2c3a1cb55f071af09fd841e2c9fcac044e23d6089c9fe873ceccfa", "hex");
     const expectedPubkey = Buffer.from("dc8d2f9eff0c4f4dbde070a48e330efc908b62a766568d91e658f284b324b878", "hex");
     
     // 验证第一个签名结果

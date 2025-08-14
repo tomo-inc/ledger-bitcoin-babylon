@@ -6,7 +6,10 @@ import { Transaction } from '@scure/btc-signer';
 
 import AppClient from '../appClient';
 import { WalletPolicy } from '../policy';
-import { encodeStakingTxPolicyToTLV, encodeSlashingTxPolicyToTLV, encodeUnbondPolicyToTLV } from './data';
+import { encodeStakingTxPolicyToTLV, 
+         encodeSlashingTxPolicyToTLV,
+         encodeUnbondPolicyToTLV,
+         encodeWithdrawPolicyToTLV } from './data';
 
 import {
   createSegwitBip322Signature,
@@ -338,38 +341,41 @@ export async function timelockPathPolicy({
   displayLeafHash?: boolean;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
+console.log('displayLeafHash:', displayLeafHash);
   derivationPath = derivationPath
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
 
-  const { timelockBlocks } = params;
+  const {
+    timelockBlocks,
+  } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     derivationPath
   );
-
   const keys: string[] = [];
-  const magicFP = displayLeafHash;
-    // ? MagicCode.LEAFHASH_DISPLAY_FP
-    // : MagicCode.LEAFHASH_CHECK_ONLY_FP;
-   keys.push(String(magicFP));
-  // keys.push(
-  //   `[${derivationPath.replace('m/', `${magicFP}/`)}]${formatKey(
-  //     leafHash,
-  //     isTestnet
-  //   )}`
-  // );
-  keys.push(
+  const descriptorTemplate = "tr(@0/**)";
+   keys.push(
     `[${derivationPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
 
-  // tr(@0/**,and_v(pk_k(staker_pk),older(timelock_blocks)))
-  const descriptorTemplate = `tr(@0/**,and_v(pk_k(@1/**),older(${timelockBlocks})))`;
+   const tlvBuffer = encodeWithdrawPolicyToTLV(
+    timelockBlocks
+  );
+  console.log('withdraw TLV buffer:', tlvBuffer.toString('hex'));
+  const app = new AppClient(transport);
+  try {
+    await app.dataPrepare(tlvBuffer);
+  } catch (error) {
+    console.error('Error in dataPrepare:', error);
+    throw error;
+  }
 
   return new WalletPolicy(policyName, descriptorTemplate, keys);
+
 }
 
 
