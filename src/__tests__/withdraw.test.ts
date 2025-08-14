@@ -1,6 +1,6 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
 import { AppClient,DefaultWalletPolicy,PsbtV2 } from '..';
-import { timelockPathPolicy } from '../lib/babylon/index';
+import { timelockPathPolicy } from '../lib/babylon/prepare';
 import * as ecc from 'tiny-secp256k1';
 
 describe('stakingTxPolicy', () => {
@@ -104,3 +104,4 @@ describe('stakingTxPolicy', () => {
     console.log("✅ All validations passed!");
     });
 });
+

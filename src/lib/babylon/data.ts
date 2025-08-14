@@ -1,7 +1,7 @@
 
 /*
 TAG=1 LEN=2 Value
-Action Type:  2=Staking 3=Unbond 0=SLASHING 1=UNBONDING SLASHING 4=withdraw
+Action Type:  2=Staking 3=Unbond 0=SLASHING 1=UNBONDING SLASHING 4=withdraw 5=sign message
 5=WITHDRAW 6=SIGN MESSAGE
 Action Type:                  TAG 0x77  LEN 00 01      VALUE action type
 Finality provider count:      TAG 0xf9  LEN 00 0n      VALUE count
@@ -325,6 +325,35 @@ export function encodeWithdrawPolicyToTLV(
   timelockBuffer.writeUInt32BE(Math.floor(timelockBlocks / 0x100000000), 0); // 高32位
   timelockBuffer.writeUInt32BE(timelockBlocks % 0x100000000, 4); // 低32位
   buffers.push(timelockBuffer);
+
+  return Buffer.concat(buffers as Uint8Array[]);
+}
+
+export function encodeSignMessagePolicyToTLV(
+  message: string,
+  pubkey: string,
+): Buffer {
+  const buffers: Buffer[] = [];
+
+  // Action Type: TAG 0x77 LEN 00 01 VALUE action type (0=SLASHING)
+  buffers.push(Buffer.from([0x77])); // TAG
+  buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
+  buffers.push(Buffer.from([0x05])); // VALUE (0 = SLASHING)
+
+  // Message: TAG 0x33 LEN 00 XX VALUE message BUFFER
+  const messageBuffer = Buffer.from(message, 'utf8');
+  buffers.push(Buffer.from([0x33])); // TAG
+  buffers.push(Buffer.from([0x00, messageBuffer.length])); // LEN (2 bytes)
+  buffers.push(messageBuffer); // VALUE
+
+  // Message pubkey: TAG 0x34 LEN 32 VALUE pubkey BUFFER
+  const pubkeyBuffer = Buffer.from(pubkey, 'hex');
+  if (pubkeyBuffer.length !== 32) {
+    throw new Error(`Invalid pubkey length: ${pubkeyBuffer.length}, expected 32`);
+  }
+  buffers.push(Buffer.from([0x34])); // TAG
+  buffers.push(Buffer.from([0x00, 0x20])); // LEN (32 bytes)
+  buffers.push(pubkeyBuffer); // VALUE
 
   return Buffer.concat(buffers as Uint8Array[]);
 }
