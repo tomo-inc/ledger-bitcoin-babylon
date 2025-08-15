@@ -122,6 +122,9 @@ export function encodeSlashingTxPolicyToTLV(
   slashingPkScriptHex: string,
   fee: number
 ): Buffer {
+  if (!covenantPks) {
+    throw new Error('covenantPks is required');
+ }
   const buffers: Buffer[] = [];
 
   // Action Type: TAG 0x77 LEN 00 01 VALUE action type (0=SLASHING)
@@ -221,6 +224,9 @@ export function encodeUnbondPolicyToTLV(
   covenantPks: string[],
   fee: number
 ): Buffer {
+  if (!covenantPks) {
+    throw new Error('covenantPks is required');
+  }
   const buffers: Buffer[] = [];
 
   // Action Type: TAG 0x77 LEN 00 01 VALUE action type (0=SLASHING)

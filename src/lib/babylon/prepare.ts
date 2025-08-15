@@ -48,7 +48,6 @@ export async function slashingPathPolicy({
   displayLeafHash?: boolean;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-  console.log('displayLeafHash:', displayLeafHash);
   derivationPath = derivationPath
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
@@ -78,11 +77,10 @@ export async function slashingPathPolicy({
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
-    _covenantPks || [],
+    _covenantPks,
     slashingPkScriptHex,
     slashingFeeSat
   );
-  console.log('slashingPathPolicy TLV buffer:', tlvBuffer.toString('hex'));
   const app = new AppClient(transport);
   try {
     await app.dataPrepare(tlvBuffer);
@@ -155,7 +153,6 @@ export async function stakingTxPolicy({
     covenantThreshold,
     _covenantPks || []
   );
-  console.log('stakingTxPolicy TLV buffer:', tlvBuffer.toString('hex'));
   const app = new AppClient(transport);
   try {
     await app.dataPrepare(tlvBuffer);
@@ -182,7 +179,6 @@ export async function unbondingPathPolicy({
   displayLeafHash?: boolean;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-  console.log('displayLeafHash:', displayLeafHash);
   derivationPath = derivationPath
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
@@ -211,10 +207,9 @@ export async function unbondingPathPolicy({
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
-    _covenantPks || [],
+    _covenantPks,
     unbondingFeeSat
   );
-  console.log('slashingPathPolicy TLV buffer:', tlvBuffer.toString('hex'));
   const app = new AppClient(transport);
   try {
     await app.dataPrepare(tlvBuffer);
@@ -247,7 +242,6 @@ export async function timelockPathPolicy({
   displayLeafHash?: boolean;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-console.log('displayLeafHash:', displayLeafHash);
   derivationPath = derivationPath
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
@@ -271,7 +265,6 @@ console.log('displayLeafHash:', displayLeafHash);
    const tlvBuffer = encodeWithdrawPolicyToTLV(
     timelockBlocks
   );
-  console.log('withdraw TLV buffer:', tlvBuffer.toString('hex'));
   const app = new AppClient(transport);
   try {
     await app.dataPrepare(tlvBuffer);
@@ -305,7 +298,6 @@ export async function signMessagePathPolicy({
   displayLeafHash?: boolean;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-console.log('displayLeafHash:', displayLeafHash);
   derivationPath = derivationPath
     ? derivationPath
     : `m/86'/${isTestnet ? 1 : 0}'/0'`;
@@ -329,7 +321,6 @@ console.log('displayLeafHash:', displayLeafHash);
    const tlvBuffer = encodeWithdrawPolicyToTLV(
     timelockBlocks
   );
-  console.log('withdraw TLV buffer:', tlvBuffer.toString('hex'));
   const app = new AppClient(transport);
   try {
     await app.dataPrepare(tlvBuffer);
