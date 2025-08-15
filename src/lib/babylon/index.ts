@@ -112,19 +112,7 @@ export async function tryParsePsbt(
 export async function signMessage(
   options: SignMessageOptions
 ): Promise<SignedMessage> {
-  const { transport, message, type, addressType, derivationPath, isTestnet } = options;
 
-  // Example usage: log the options
-  console.log('Signing message with options:', {
-    transport,
-    message,
-    type,
-    addressType,
-    derivationPath,
-    isTestnet,
-  });
-
-  // You can add more logic here to use these options for actual signing
   const fakeSignature = Buffer.from('deadbeef', 'hex').toString('base64');
   const signature = fakeSignature;
   return {

@@ -1,9 +1,9 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
-import { AppClient,DefaultWalletPolicy,PsbtV2 } from '..';
+import { AppClient, DefaultWalletPolicy, PsbtV2, signMessage } from '..';
 import { encodeSignMessagePolicyToTLV } from '../lib/babylon/data';
 import * as ecc from 'tiny-secp256k1';
 
-describe('stakingTxPolicy', () => {
+describe('signmessage', () => {
   let transport: any;
   let app: AppClient;
 
@@ -19,27 +19,15 @@ describe('stakingTxPolicy', () => {
 
 
   it('should sending tlv for sign message', async () => {
-    const params = {
-      message:'6843229b3ffb043bf8da7b12baf0f80d88363238',
-      pubkey:'740ee64e452e3baee127b03c195bcc21ad3edded2ef26c5af483d9c56304d1e5'
-    };
+  const params = {
+    message:'6843229b3ffb043bf8da7b12baf0f80d88363238',
+    pubkey:'740ee64e452e3baee127b03c195bcc21ad3edded2ef26c5af483d9c56304d1e5'
+  };
 
-  const policy = await encodeSignMessagePolicyToTLV({
-          message,
-          pubkey
-        });
-
-    const policy = await signMessage({
-      policyName: 'Sign message',
-      transport,
-      params,
-      derivationPath: `m/86'/1'/0'`,
-      displayLeafHash: false,
-      isTestnet: true,
-    });
-
-    expect(policy).toBeDefined();
-    expect(policy.descriptorTemplate).toBe('tr(@0/**)');
+  const policy = encodeSignMessagePolicyToTLV(params.message, params.pubkey);
+  expect(policy).toBeDefined();
+  expect(policy.descriptorTemplate).toBe('tr(@0/**)');
+ 
   });
 
 
@@ -47,7 +35,7 @@ describe('stakingTxPolicy', () => {
     jest.setTimeout(30000);
     // psbt from test_sign_psbt_singlesig_wpkh_2to2 in the main test suite, converted to PSBTv2
     const psbtBuf = Buffer.from(
-       "cHNidP8BAH0CAAAAAU5oPucfQQOAdrEZwJODBvpzHfaA/orEXxwbxelbMexgAAAAAAD/////AsQJAAAAAAAAFgAUW+EmJNCKK0JAldfAciHDNFDRS/EEpgAAAAAAACJRICyVutUKY9E6qBjfjktoZBga2/RyCoiq+OPBI1ugik2fAAAAAAABAStQwwAAAAAAACJRINdj3mtHHjBWQbpB1lxngujLz/bgjoPaqw2hJ1u8n6rQQhXBUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsCJtgX5iDHD5SbZ6yF5ZRRSk4qMD/f16u7MthJR1dRt6/15ASDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eK0g1mEk+PQv2D5MkBoQCuO11wbvbP0hewS8ZBUuc5owxB6tIAruBQmxbbccmZI4pIJ9uUVSaFmxPJVIerRnJTV8mp8lrCARPDoyqdMgtyGQoEoCCg2zl27zaXJnMljpo4o2Tz3DsLogF5Ic8VbMtOc9Qo+ZbtEbJFMT434nyXisTSzCHspGcuS6IDu5PfyLYYh9dx82MOmmPpfLr8/MeFVqR034OjGg74mcuiBAr69HxP+lbehkENjke6ortvBLYE9OokMjc33cP+CS37ogeacf/XHFA+8uL5G8z8j82nlG9GU87w2fPd4geV7zufC6INIfr3jGdRoNOOa9gCi5B/8H6ahppD/IN9az+N/2EZo2uiD1GZ764/KLuCR2Fjp+RYx61EXZv/sGgtENO9sstB+Ojrog+p2ILUX0BgvbgEIYOCjNh1RPHqmXOA5YbKt31f1phze6VpzAARcgUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsAAAAA=",
+       "cHNidP8BAD0AAAAAAax33wJvai3ohYqdkcV8Gw1exs19JDS36wHEKb1fWRgYAAAAAAAAAAAAAQAAAAAAAAAAAWoAAAAAAAEBKwAAAAAAAAAAIlEgdA7mTkUuO67hJ7A8GVvMIa0+3e0u8mxa9IPZxWME0eUhFtyNL57/DE9NveBwpI4zDvyQi2KnZlaNkeZY8oSzJLh4GQD1rML9VgAAgAEAAIAAAACAAAAAAAAAAAABFyDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eAAA",
        "base64"
     );
 

@@ -283,3 +283,61 @@ console.log('displayLeafHash:', displayLeafHash);
   return new WalletPolicy(policyName, descriptorTemplate, keys);
 
 }
+
+export type SignMessagePolicy = undefined | 'Sign message';
+export type SignMessageParams = {
+  leafHash: Buffer;
+  timelockBlocks: number;
+};
+
+export async function signMessagePathPolicy({
+  policyName = 'Sign message',
+  transport,
+  params,
+  derivationPath,
+  displayLeafHash = true,
+  isTestnet = false,
+}: {
+  policyName?: SignMessagePolicy;
+  transport: Transport;
+  params: TimelockParams;
+  derivationPath?: string;
+  displayLeafHash?: boolean;
+  isTestnet?: boolean;
+}): Promise<WalletPolicy> {
+console.log('displayLeafHash:', displayLeafHash);
+  derivationPath = derivationPath
+    ? derivationPath
+    : `m/86'/${isTestnet ? 1 : 0}'/0'`;
+
+  const {
+    timelockBlocks,
+  } = params;
+  const [masterFingerPrint, extendedPublicKey] = await _prepare(
+    transport,
+    derivationPath
+  );
+  const keys: string[] = [];
+  const descriptorTemplate = "tr(@0/**)";
+   keys.push(
+    `[${derivationPath.replace(
+      'm/',
+      `${masterFingerPrint}/`
+    )}]${extendedPublicKey}`
+  );
+
+   const tlvBuffer = encodeWithdrawPolicyToTLV(
+    timelockBlocks
+  );
+  console.log('withdraw TLV buffer:', tlvBuffer.toString('hex'));
+  const app = new AppClient(transport);
+  try {
+    await app.dataPrepare(tlvBuffer);
+  } catch (error) {
+    console.error('Error in dataPrepare:', error);
+    throw error;
+  }
+
+  return new WalletPolicy(policyName, descriptorTemplate, keys);
+
+}
