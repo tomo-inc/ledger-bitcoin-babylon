@@ -1,20 +1,15 @@
-import { Script } from '@cmdcode/tapscript';
-
 import Transport from '@ledgerhq/hw-transport';
 import { base64 } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
 
 import AppClient from '../appClient';
 import { WalletPolicy } from '../policy';
-import { computeLeafHash, tryParseTimelockPath } from './utils';
 import { getTaprootScript } from './psbt';
 import {
   AddressType,
   MessageSigningProtocols,
   SignedMessage,
 } from './types';
-
-import { timelockPathPolicy } from './prepare'
 
 interface SignMessageOptions {
   transport: Transport;
@@ -74,37 +69,6 @@ export async function signPsbt({
   }
 
   return transaction;
-}
-
-export async function tryParsePsbt(
-  transport: Transport,
-  psbtBase64: string,
-  isTestnet = false,
-  leafHash?: Buffer
-): Promise<WalletPolicy | void> {
-  const derivationPath = `m/86'/${isTestnet ? 1 : 0}'/0'`;
-
-  const script = getTaprootScript(psbtBase64);
-  if (!script) {
-    throw new Error(`No script found in psbt`);
-  }
-
-  leafHash = leafHash ? leafHash : computeLeafHash(psbtBase64);
-
-  const decodedScript = Script.decode(script);
-
-  const parsed = tryParseTimelockPath(decodedScript);
-  if (parsed) {
-    return timelockPathPolicy({
-      transport,
-      params: {
-        leafHash,
-        timelockBlocks: Number(`0x${parsed[parsed.length - 1]}`),
-      },
-      derivationPath,
-      isTestnet,
-    });
-  }
 }
 
 

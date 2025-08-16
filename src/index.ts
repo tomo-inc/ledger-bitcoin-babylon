@@ -26,7 +26,6 @@ import {
 import {
   computeLeafHash,
   signMessage,
-  tryParsePsbt,
   signPsbt,
   slashingPathPolicy,
   stakingTxPolicy,
@@ -64,7 +63,6 @@ export {
   timelockPathPolicy,
   stakingTxPolicy,
   signPsbt,
-  tryParsePsbt,
 };
 
 export default AppClient;
