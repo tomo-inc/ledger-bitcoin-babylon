@@ -7,14 +7,14 @@ import { WalletPolicy } from '../policy';
 import { getTaprootScript } from './psbt';
 import {
   AddressType,
-  MessageSigningProtocols,
   SignedMessage,
 } from './types';
+import { signMessageBIP322 } from './bip322';
 
 interface SignMessageOptions {
   transport: Transport;
   message: string;
-  type: 'ecdsa' | 'bip322-simple'; 
+  type: 'bip322-simple'; 
   addressType?: AddressType;
   derivationPath?: string;
   isTestnet?: boolean;
@@ -75,20 +75,33 @@ export async function signPsbt({
 export async function signMessage(
   options: SignMessageOptions
 ): Promise<SignedMessage> {
-  const { transport, message, type, addressType, derivationPath, isTestnet } = options;
-  // 这里可以根据需要使用这些参数，例如日志输出或后续实现
-  void transport;
-  void message;
-  void type;
-  void addressType;
-  void derivationPath;
-  void isTestnet;
-  const fakeSignature = Buffer.from('deadbeef', 'hex').toString('base64');
-  const signature = fakeSignature;
-  return {
-    signature,
-    protocol: MessageSigningProtocols.BIP322,
-  };
+
+  const {
+    transport,
+    message,
+    type,
+    addressType,
+    derivationPath,
+    isTestnet,
+  } = options;
+
+  if (!transport) {
+    throw new Error('signMessage: transport is required');
+  }
+  if (typeof message !== 'string' || message.length === 0) {
+    throw new Error('signMessage: message must be a non-empty string');
+  }
+  if (type !== 'bip322-simple') {
+    throw new Error('signMessage: type must be "bip322-simple"');
+  }
+
+  return signMessageBIP322({
+      transport,
+      message,
+      addressType,
+      derivationPath,
+      isTestnet,
+    });
 }
 export { 
   timelockPathPolicy,
