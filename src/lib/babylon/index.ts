@@ -76,7 +76,6 @@ export async function signPsbt({
   return transaction;
 }
 
-
 export async function tryParsePsbt(
   transport: Transport,
   psbtBase64: string,

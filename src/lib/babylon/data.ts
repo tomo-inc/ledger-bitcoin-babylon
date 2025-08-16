@@ -206,7 +206,6 @@ export function encodeSlashingTxPolicyToTLV(
 
   return Buffer.concat(buffers as Uint8Array[]);
 }
-
 /**
  * Encodes slashing transaction policy parameters into a TLV (Tag-Length-Value) formatted Buffer.
  *
@@ -363,3 +362,4 @@ export function encodeSignMessagePolicyToTLV(
 
   return Buffer.concat(buffers as Uint8Array[]);
 }
+
