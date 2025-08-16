@@ -38,7 +38,6 @@ export async function slashingPathPolicy({
   transport,
   params,
   derivationPath,
-  displayLeafHash = true,
   isTestnet = false,
 }: {
   policyName?: SlashingPolicy;
@@ -169,7 +168,6 @@ export async function unbondingPathPolicy({
   transport,
   params,
   derivationPath,
-  displayLeafHash = true,
   isTestnet = false,
 }: {
   policyName?: UnbondingPolicy;
@@ -232,7 +230,6 @@ export async function timelockPathPolicy({
   transport,
   params,
   derivationPath,
-  displayLeafHash = true,
   isTestnet = false,
 }: {
   policyName?: TimelockPolicy;
@@ -288,7 +285,6 @@ export async function signMessagePathPolicy({
   transport,
   params,
   derivationPath,
-  displayLeafHash = true,
   isTestnet = false,
 }: {
   policyName?: SignMessagePolicy;

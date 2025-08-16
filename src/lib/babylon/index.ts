@@ -111,7 +111,14 @@ export async function tryParsePsbt(
 export async function signMessage(
   options: SignMessageOptions
 ): Promise<SignedMessage> {
-
+  const { transport, message, type, addressType, derivationPath, isTestnet } = options;
+  // 这里可以根据需要使用这些参数，例如日志输出或后续实现
+  void transport;
+  void message;
+  void type;
+  void addressType;
+  void derivationPath;
+  void isTestnet;
   const fakeSignature = Buffer.from('deadbeef', 'hex').toString('base64');
   const signature = fakeSignature;
   return {
