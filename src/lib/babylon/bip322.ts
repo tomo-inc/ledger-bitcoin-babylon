@@ -11,7 +11,6 @@ import { BIP32Factory } from 'bip32';
 import { encode } from 'varuint-bitcoin';
 
 import AppClient, { WalletPolicy } from '../..';
-import { fromBech32 } from '@cosmjs/encoding';
 import {
   MessageSigningProtocols,
   SignedMessage,
@@ -19,8 +18,9 @@ import {
   TapBip32Derivation,
 } from './types';
 import Transport from '@ledgerhq/hw-transport';
-import { isTestnetPath, getAddressTypeFromPath } from './utils';
+import { getAddressTypeFromPath } from './utils';
 import { AddressType } from './types'
+import { signMessagePathPolicy } from './prepare';
 
 const bip32 = BIP32Factory(ecc);
 const encodeVarString = (b: Buffer) => Buffer.concat([encode(b.byteLength), b]);
@@ -236,9 +236,14 @@ export async function createTaprootBip322Signature({
   derivationPath: string;
   isTestnet?: boolean;
 }): Promise<SignedMessage> {
-
+  const transport = app.transport;
   const masterFingerPrint = await app.getMasterFingerprint();
-  const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
+  console.log("message:", message);
+  console.log("Master fingerprint:", masterFingerPrint);
+  console.log("Derivation path:", derivationPath);
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
+  console.log("Three-level path:", threeLevelPath);
+  const extendedPublicKey = await app.getExtendedPubkey(threeLevelPath);
   const { internalPubkey, taprootScript } = getTaprootAccountDataFromXpub(
     extendedPublicKey,
     0,
@@ -253,15 +258,22 @@ export async function createTaprootBip322Signature({
     leafHashes: [],
   };
 
-  const accountPolicy = new WalletPolicy(
-    'Sign message',
-    'tr(@0/**)',
-    []
-  );
+  const params = {
+      message:message,
+      pubkey:Buffer.from(taprootScript.slice(2)),
+    };
 
+  const policy = await signMessagePathPolicy({
+      transport,
+      params,
+      derivationPath,
+      isTestnet
+    });
+  console.log("Policy descriptor template:", policy.descriptorTemplate);
+  console.log("Policy keys:", policy.keys);
   return createMessageSignature(
     app,
-    accountPolicy,
+    policy,
     message,
     taprootScript,
     {

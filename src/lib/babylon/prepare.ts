@@ -1,11 +1,13 @@
 import { encodeStakingTxPolicyToTLV, 
          encodeSlashingTxPolicyToTLV,
          encodeUnbondPolicyToTLV,
-         encodeWithdrawPolicyToTLV } from './data';
+         encodeWithdrawPolicyToTLV,
+         encodeSignMessagePolicyToTLV } from './data';
 
 import AppClient from '../appClient';
 import Transport from '@ledgerhq/hw-transport';
 import { WalletPolicy } from '../policy';
+import { validadteAddress } from './utils';
 
 async function _prepare(
   transport: Transport,
@@ -276,46 +278,48 @@ export async function timelockPathPolicy({
 
 export type SignMessagePolicy = undefined | 'Sign message';
 export type SignMessageParams = {
-  leafHash: Buffer;
-  timelockBlocks: number;
+  message: string;
+  pubkey: Buffer;
 };
 
 export async function signMessagePathPolicy({
-  policyName = 'Sign message',
   transport,
   params,
-  derivationPath,
-  isTestnet = false,
+  derivationPath
 }: {
   policyName?: SignMessagePolicy;
   transport: Transport;
-  params: TimelockParams;
-  derivationPath?: string;
-  displayLeafHash?: boolean;
+  params: SignMessageParams;
+  derivationPath: string;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-  derivationPath = derivationPath
-    ? derivationPath
-    : `m/86'/${isTestnet ? 1 : 0}'/0'`;
-
+const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const {
-    timelockBlocks,
+    message,
+    pubkey,
   } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
-    derivationPath
+    threeLevelPath
   );
   const keys: string[] = [];
+ 
   const descriptorTemplate = "tr(@0/**)";
-   keys.push(
-    `[${derivationPath.replace(
+  keys.push(
+    `[${threeLevelPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
-
-   const tlvBuffer = encodeWithdrawPolicyToTLV(
-    timelockBlocks
+  console.log("message:", message);
+  const address = validadteAddress(message);
+  if (!address) {
+    throw new Error('The message should be a valid bbn address.');
+  }
+   console.log("Address:", address);
+   const tlvBuffer = encodeSignMessagePolicyToTLV(
+    Buffer.from(address),
+    pubkey
   );
   const app = new AppClient(transport);
   try {
@@ -324,7 +328,6 @@ export async function signMessagePathPolicy({
     console.error('Error in dataPrepare:', error);
     throw error;
   }
-
-  return new WalletPolicy(policyName, descriptorTemplate, keys);
+  return new WalletPolicy('', descriptorTemplate, keys);
 
 }

@@ -35,13 +35,15 @@ export function tryParseTimelockPath(decoded: string[]): string[] | void {
 
 
 export function validadteAddress(input: string): Uint8Array | void {
-  try {
+ try {
     const { prefix, data } = fromBech32(input);
     if (prefix == 'bbn' && data.length === 20) {
       return data;
+    }else {
+      throw new Error('The psbt does not contain a taproot script.');
     }
   } catch (e) {
-    //
+    throw new Error('The psbt does not contain a taproot script.');
   }
 }
 

@@ -335,8 +335,8 @@ export function encodeWithdrawPolicyToTLV(
 }
 
 export function encodeSignMessagePolicyToTLV(
-  message: string,
-  pubkey: string,
+  message: Buffer,
+  pubkey: Buffer,
 ): Buffer {
   const buffers: Buffer[] = [];
 
@@ -346,19 +346,20 @@ export function encodeSignMessagePolicyToTLV(
   buffers.push(Buffer.from([0x05])); // VALUE (0 = SLASHING)
 
   // Message: TAG 0x33 LEN 00 XX VALUE message BUFFER
-  const messageBuffer = Buffer.from(message, 'utf8');
+  //const messageBuffer = Buffer.from(message, 'hex');
+  console.log("Message Buffer:", message);
+  console.log("Message Length:", message.length);
   buffers.push(Buffer.from([0x33])); // TAG
-  buffers.push(Buffer.from([0x00, messageBuffer.length])); // LEN (2 bytes)
-  buffers.push(messageBuffer); // VALUE
+  buffers.push(Buffer.from([0x00, message.length])); // LEN (2 bytes)
+  buffers.push(message); // VALUE
 
   // Message pubkey: TAG 0x34 LEN 32 VALUE pubkey BUFFER
-  const pubkeyBuffer = Buffer.from(pubkey, 'hex');
-  if (pubkeyBuffer.length !== 32) {
-    throw new Error(`Invalid pubkey length: ${pubkeyBuffer.length}, expected 32`);
+  if (pubkey.length !== 32) {
+    throw new Error(`Invalid pubkey length: ${pubkey.length}, expected 32`);
   }
   buffers.push(Buffer.from([0x34])); // TAG
   buffers.push(Buffer.from([0x00, 0x20])); // LEN (32 bytes)
-  buffers.push(pubkeyBuffer); // VALUE
+  buffers.push(pubkey); // VALUE
 
   return Buffer.concat(buffers as Uint8Array[]);
 }

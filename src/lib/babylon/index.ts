@@ -84,6 +84,7 @@ export async function signMessage(
   if (typeof message !== 'string' || message.length === 0) {
     throw new Error('signMessage: message must be a non-empty string');
   }
+  console.log("Signing message:", message);
   if (!validadteAddress(message)) {
     throw new Error('The message should be a valid bbn address.');
   }

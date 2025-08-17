@@ -16,11 +16,11 @@ describe('signmessage policy', () => {
 
     it("can sign message", async () => {
       jest.setTimeout(30000);
-      const message = 'bbn3229b3ffb043bf8da7b12baf0f80d88363238';
+      const message = 'bbn1dppj9xellvzrh7x60vft4u8cpkyrvv3camt8ps';
       const result = await signMessage({
         transport,
         message,
-        derivationPath: `m/86'/0'/0'/0/0`,
+        derivationPath: `m/86'/1'/0'/0/0`,
       });
       expect(result).toBeDefined();
     });
