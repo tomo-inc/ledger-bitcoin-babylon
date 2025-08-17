@@ -17,9 +17,10 @@ import {
   SignedMessage,
   Bip32Derivation,
   TapBip32Derivation,
-  AddressType
 } from './types';
 import Transport from '@ledgerhq/hw-transport';
+import { isTestnetPath, getAddressTypeFromPath } from './utils';
+import { AddressType } from './types'
 
 const bip32 = BIP32Factory(ecc);
 const encodeVarString = (b: Buffer) => Buffer.concat([encode(b.byteLength), b]);
@@ -31,16 +32,6 @@ const DUMMY_INPUT_INDEX = 0xffffffff;
 const DUMMY_INPUT_SEQUENCE = 0;
 type PsbtInput = Parameters<Psbt['addInput']>[0];
 
-function validadteAddress(input: string): Uint8Array | void {
-  try {
-    const { prefix, data } = fromBech32(input);
-    if (prefix == 'bbn' && data.length === 20) {
-      return data;
-    }
-  } catch (e) {
-    //
-  }
-}
 
 export function bip0322Hash(message: string) {
   const { sha256 } = crypto;
@@ -164,8 +155,7 @@ function getNativeSegwitAccountDataFromXpub(
 export async function createSegwitBip322Signature({
   message,
   app,
-  derivationPath = `m/84'/0'/0'`,
-  isTestnet = false,
+  derivationPath
 }: {
   message: string;
   app: AppClient;
@@ -176,8 +166,7 @@ export async function createSegwitBip322Signature({
   const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
   const { publicKey, witnessScript } = getNativeSegwitAccountDataFromXpub(
     extendedPublicKey,
-    0,
-    isTestnet
+    0
   );
 
   const inputDerivation: Bip32Derivation = {
@@ -239,14 +228,15 @@ function getTaprootAccountDataFromXpub(
 export async function createTaprootBip322Signature({
   message,
   app,
-  derivationPath = `m/86'/0'/0'`,
-  isTestnet = false,
+  derivationPath,
+  isTestnet = false
 }: {
   message: string;
   app: AppClient;
   derivationPath: string;
-  isTestnet: boolean;
+  isTestnet?: boolean;
 }): Promise<SignedMessage> {
+
   const masterFingerPrint = await app.getMasterFingerprint();
   const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
   const { internalPubkey, taprootScript } = getTaprootAccountDataFromXpub(
@@ -257,20 +247,15 @@ export async function createTaprootBip322Signature({
 
   // Need to update input derivation path so the ledger can recognize the inputs to sign
   const inputDerivation: TapBip32Derivation = {
-    path: `${derivationPath}/0/0`,
+    path: derivationPath,
     pubkey: internalPubkey,
     masterFingerprint: Buffer.from(masterFingerPrint, 'hex'),
     leafHashes: [],
   };
 
-  const address = validadteAddress(message);
-  if (!address) {
-    throw new Error('The message should be a valid bbn address.');
-  }
-
   const accountPolicy = new WalletPolicy(
     'Sign message',
-    'tr(@0/**,and_v(pk_k(@1/**),pk_k(@2/**)))',
+    'tr(@0/**)',
     []
   );
 
@@ -291,19 +276,18 @@ export async function createTaprootBip322Signature({
 export async function signMessageBIP322({
   transport,
   message,
-  addressType = AddressType.p2tr,
-  derivationPath = `m/86'/0'/0'`,
-  isTestnet = false,
+  derivationPath,
+  isTestnet = false
 }: {
   transport: Transport;
   message: string;
-  addressType: AddressType;
   derivationPath: string;
   isTestnet?: boolean;
 }): Promise<SignedMessage> {
-  const result = validadteAddress(message);
-  if (!result) {
-    throw new Error('The message should be a valid bbn address.');
+
+  const addressType = getAddressTypeFromPath(derivationPath);
+  if (!addressType) {
+    throw new Error('The derivation path is not valid.');
   }
   const app = new AppClient(transport);
   if (addressType === AddressType.p2tr) {
@@ -311,7 +295,7 @@ export async function signMessageBIP322({
       message,
       app,
       derivationPath,
-      isTestnet,
+      isTestnet
     });
   }
 
@@ -319,6 +303,6 @@ export async function signMessageBIP322({
     message,
     app,
     derivationPath,
-    isTestnet,
+    isTestnet
   });
 }

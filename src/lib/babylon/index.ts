@@ -6,18 +6,15 @@ import AppClient from '../appClient';
 import { WalletPolicy } from '../policy';
 import { getTaprootScript } from './psbt';
 import {
-  AddressType,
-  SignedMessage,
+  SignedMessage
 } from './types';
 import { signMessageBIP322 } from './bip322';
+import { isTestnetPath, isFullFiveLevelPath, validadteAddress } from './utils';
 
 interface SignMessageOptions {
   transport: Transport;
   message: string;
-  type: 'bip322-simple'; 
-  addressType?: AddressType;
-  derivationPath?: string;
-  isTestnet?: boolean;
+  derivationPath: string;
 }
 
 
@@ -79,28 +76,27 @@ export async function signMessage(
   const {
     transport,
     message,
-    type,
-    addressType,
-    derivationPath,
-    isTestnet,
+    derivationPath
   } = options;
-
   if (!transport) {
     throw new Error('signMessage: transport is required');
   }
   if (typeof message !== 'string' || message.length === 0) {
     throw new Error('signMessage: message must be a non-empty string');
   }
-  if (type !== 'bip322-simple') {
-    throw new Error('signMessage: type must be "bip322-simple"');
+  if (!validadteAddress(message)) {
+    throw new Error('The message should be a valid bbn address.');
   }
+  if (!isFullFiveLevelPath(derivationPath)) {
+      throw new Error('The derivation path should be a full five-level path.');
+    }
+  const isTestnet = isTestnetPath(derivationPath);  
 
   return signMessageBIP322({
       transport,
       message,
-      addressType,
       derivationPath,
-      isTestnet,
+      isTestnet
     });
 }
 export { 

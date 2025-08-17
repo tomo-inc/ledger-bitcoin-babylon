@@ -1,6 +1,8 @@
 import { fromBech32 } from '@cosmjs/encoding';
 import { getLeafHash, getTaprootScript } from './psbt';
 import { base64 } from '@scure/base';
+import { AddressType } from './types';
+
 const TimelockPathRegex1 =
   /^([a-f0-9]{64}) OP_CHECKSIGVERIFY OP_(0|[1-9]|1[0-6]) OP_CHECKSEQUENCEVERIFY$/;
 
@@ -50,4 +52,34 @@ export function computeLeafHash(psbt: Uint8Array | string): Buffer {
     throw new Error('The psbt does not contain a taproot script.');
   }
   return getLeafHash(script);
+}
+
+export function isTestnetPath(path: string): boolean {
+  const parts = path.split('/');
+  if (parts.length < 3) return false;
+  return parts[2] === "1'";
+}
+
+export function isFullFiveLevelPath(path: string): boolean {
+  const parts = path.split('/');
+  return parts.length === 6 && parts[0] === 'm';
+}
+
+export function getAddressTypeFromPath(path: string): AddressType | undefined {
+  const parts = path.split('/');
+  if (parts.length < 2) return undefined;
+  const purpose = parts[1].replace("'", "");
+  switch (purpose) {
+    case '86':
+      return AddressType.p2tr;
+    case '84':
+      return AddressType.p2wpkh;
+    case '49':
+      return AddressType.p2sh;
+    case '44':
+    case '45':
+      return AddressType.p2pkh;
+    default:
+      return undefined;
+  }
 }
