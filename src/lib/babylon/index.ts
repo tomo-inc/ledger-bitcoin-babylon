@@ -90,7 +90,7 @@ export async function signMessage(
   }
   if (!isFullFiveLevelPath(derivationPath)) {
       throw new Error('The derivation path should be a full five-level path.');
-    }
+  }
   const isTestnet = isTestnetPath(derivationPath);  
 
   return signMessageBIP322({
@@ -101,25 +101,15 @@ export async function signMessage(
     });
 }
 export { 
-  timelockPathPolicy,
+  withdrawPathPolicy,
   slashingPathPolicy,
   stakingTxPolicy,
   unbondingPathPolicy
 } from './prepare';
 
-export { 
-  computeLeafHash, 
-  tryParseTimelockPath 
-} from './utils';
-
 // 如果有这些类型定义，也需要导出
-export type { 
-  SlashingPolicy, 
+export type {  
   SlashingParams, 
-  StakingTxPolicy, 
-  StakingTxParams, 
-  TimelockPolicy, 
-  TimelockParams, 
-  UnbondingPolicy, 
+  StakingTxParams,  
   UnbondingParams 
 } from './prepare';

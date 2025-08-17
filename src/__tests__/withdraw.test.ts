@@ -1,6 +1,6 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
-import { AppClient,DefaultWalletPolicy,PsbtV2 } from '..';
-import { timelockPathPolicy } from '../lib/babylon/prepare';
+import { AppClient,PsbtV2 } from '..';
+import { withdrawPathPolicy } from '../lib/babylon/prepare';
 import * as ecc from 'tiny-secp256k1';
 
 describe('stakingTxPolicy', () => {
@@ -18,7 +18,7 @@ describe('stakingTxPolicy', () => {
   });
 
 
-  it('should send tlv data for withdraw', async () => {
+  it('should sign withdraw', async () => {
     const params = {
       timelockBlocks: 1008,
       finalityProviders: ['d66124f8f42fd83e4c901a100ae3b5d706ef6cfd217b04bc64152e739a30c41e'],
@@ -39,36 +39,18 @@ describe('stakingTxPolicy', () => {
       slashingPkScriptHex: "00145be12624d08a2b424095d7c07221c33450d14bf1",
     };
 
-    const policy = await timelockPathPolicy({
-      policyName: 'Withdraw',
+    const policy = await withdrawPathPolicy({
       transport,
       params,
-      derivationPath: `m/86'/1'/0'`,
-      displayLeafHash: false,
-      isTestnet: true,
+      derivationPath: `m/86'/1'/0'/0/0`
     });
-
-    expect(policy).toBeDefined();
-    expect(policy.descriptorTemplate).toBe('tr(@0/**)');
-  });
-
-
-  it("can sign withdraw", async () => {
-    jest.setTimeout(30000);
-    // psbt from test_sign_psbt_singlesig_wpkh_2to2 in the main test suite, converted to PSBTv2
-    const psbtBuf = Buffer.from(
+     const psbtBuf = Buffer.from(
        "cHNidP8BAF4CAAAAAeH2BxZtWBxqa5e1h7G0LZ7JANIrlRdqkdyObGHed2D3AAAAAADwAwAAAWC6AAAAAAAAIlEgdA7mTkUuO67hJ7A8GVvMIa0+3e0u8mxa9IPZxWME0eUAAAAAAAEBK4C7AAAAAAAAIlEgBSZ/XUbQ9Yp+rjB4isu1kF9Bxmw5L+EimM9U7tEzOMNCFcFQkpt0waBJVLeLS2A16XpeB4paDyjsltVHv+6azoA6wE/2PBlmrPya/P2SJEn+52lqOKw5Js4JbbljP90EMMqbJyDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eK0C8AOywAEXIFCSm3TBoElUt4tLYDXpel4HiloPKOyW1Ue/7prOgDrAAAA=",
        "base64"
     );
-
-    const walletPolicy = new DefaultWalletPolicy(
-      "tr(@0/**)",
-      "[f5acc2fd/86'/1'/0']tpubDDKYE6BREvDsSWMazgHoyQWiJwYaDDYPbCFjYxN3HFXJP5fokeiK4hwK5tTLBNEDBwrDXn8cQ4v9b2xdW62Xr5yxoQdMu1v6c7UDXYVH27U"
-    );
-
     const psbt = new PsbtV2();
     psbt.deserialize(psbtBuf);
-    const result = await app.signPsbt(psbt, walletPolicy, null, () => {});
+    const result = await app.signPsbt(psbt, policy, null, () => {});
 
     // 验证结果长度
     expect(result.length).toEqual(1);
@@ -85,7 +67,7 @@ describe('stakingTxPolicy', () => {
 
      // BIP-340 Schnorr 签名验证
    const signature = partialSig0.signature.slice(0, 64); // 取前 64 字节作为签名
-  console.log("Signature (hex):", signature.toString('hex'));
+   console.log("Signature (hex):", signature.toString('hex'));
    const isValidSignature = ecc.verifySchnorr(expectedSighash, expectedPubkey, signature);
    expect(isValidSignature).toBe(true);
     
@@ -98,10 +80,7 @@ describe('stakingTxPolicy', () => {
     console.log("Expected pubkey:", expectedPubkey.toString('hex'));
     console.log("Signature length:", partialSig0.signature.length);
     console.log("Signature (first 64 bytes):", Buffer.from(partialSig0.signature.slice(0, 64)).toString('hex'));
-    
-    // 注意：实际的 Schnorr 签名验证需要实现 BIP-340 算法
-    // 这里我们只验证了数据格式和关键字段
     console.log("✅ All validations passed!");
-    });
+  });
 });
 

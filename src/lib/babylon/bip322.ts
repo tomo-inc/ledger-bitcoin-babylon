@@ -238,11 +238,7 @@ export async function createTaprootBip322Signature({
 }): Promise<SignedMessage> {
   const transport = app.transport;
   const masterFingerPrint = await app.getMasterFingerprint();
-  console.log("message:", message);
-  console.log("Master fingerprint:", masterFingerPrint);
-  console.log("Derivation path:", derivationPath);
   const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
-  console.log("Three-level path:", threeLevelPath);
   const extendedPublicKey = await app.getExtendedPubkey(threeLevelPath);
   const { internalPubkey, taprootScript } = getTaprootAccountDataFromXpub(
     extendedPublicKey,
@@ -250,7 +246,6 @@ export async function createTaprootBip322Signature({
     isTestnet
   );
 
-  // Need to update input derivation path so the ledger can recognize the inputs to sign
   const inputDerivation: TapBip32Derivation = {
     path: derivationPath,
     pubkey: internalPubkey,
@@ -269,8 +264,6 @@ export async function createTaprootBip322Signature({
       derivationPath,
       isTestnet
     });
-  console.log("Policy descriptor template:", policy.descriptorTemplate);
-  console.log("Policy keys:", policy.keys);
   return createMessageSignature(
     app,
     policy,
