@@ -18,7 +18,7 @@ describe('stakingTxPolicy', () => {
   });
 
 
-  it('should send tlv data for stake', async () => {
+  it('should sign native segwit for stake', async () => {
     const params = {
       timelockBlocks: 64000,
       finalityProviders: ['d66124f8f42fd83e4c901a100ae3b5d706ef6cfd217b04bc64152e739a30c41e'],
@@ -39,10 +39,10 @@ describe('stakingTxPolicy', () => {
     const policy = await stakingTxPolicy({
       transport,
       params,
-      derivationPath: `m/86'/1'/0'/0/0`,
+      derivationPath: `m/84'/1'/0'/0/0`,
     });
     const psbtBuf = Buffer.from(
-       "cHNidP8BAIkCAAAAAQoDdUgOA5oDhvrH0NWZTa/GJzvd4UhFIbmbOiWufc84AAAAAAD/////AlDDAAAAAAAAIlEg12Pea0ceMFZBukHWXGeC6MvP9uCOg9qrDaEnW7yfqtAcAi0AAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlAAAAAAABASvAxi0AAAAAACJRIHQO5k5FLjuu4SewPBlbzCGtPt3tLvJsWvSD2cVjBNHlARcg3I0vnv8MT0294HCkjjMO/JCLYqdmVo2R5ljyhLMkuHgAAAA=",
+       "cHNidP8BAH0CAAAAAaEtHx7dpPIS1RLs5LOtnYXmhBKx5eRgnL1yeeWlS6iVAAAAAAD/////AkBCDwAAAAAAIlEgO0v4HIc+jMw1cCYcWnQXJOyy2tGq1peFMCdNKD6bmFEYBT0AAAAAABYAFDXG4N1tPISxa6iF3Kc6yGPQtZPsAAAAAAABAR9AS0wAAAAAABYAFBNH6CoDe127OM+MR1nyQrH1x+CaIgYCfLddNLAFxOufYrvyxFfXY46BPnV+/OyPpoZ32VC2NmIY9azC/VQAAIABAACAAAAAgAAAAAAAAAAAAAAA",
        "base64"
     );
     const psbt = new PsbtV2();
