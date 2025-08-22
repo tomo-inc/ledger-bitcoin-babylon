@@ -40,6 +40,7 @@
     "@scure/btc-signer": "^1.6.0",
     "bip32-path": "^0.4.2",
     "crypto": "^1.0.1",
+    "elliptic": "^6.6.1",
     "ledger-bitcoin": "^0.2.3",
     "process": "^0.11.10",
     "tiny-secp256k1": "^2.2.4"

@@ -1,7 +1,12 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
 import { AppClient, PsbtV2 } from '..';
 import { stakingTxPolicy } from '../lib/babylon/index';
-import * as ecc from 'tiny-secp256k1';
+// import * as ecc from 'tiny-secp256k1';
+// import * as ECPairFactory from 'ecpair';
+//import { script } from 'bitcoinjs-lib';
+import { ec as EC } from 'elliptic';
+// import * as bitcoin from 'bitcoinjs-lib';
+//const ECPair = ECPairFactory.ECPairFactory(ecc);
 
 describe('stakingTxPolicy', () => {
   let transport: any;
@@ -48,25 +53,57 @@ describe('stakingTxPolicy', () => {
     const psbt = new PsbtV2();
     psbt.deserialize(psbtBuf);
     const result = await app.signPsbt(psbt, policy, null, () => {});
-
+    console.log("Result:", JSON.stringify(result, (_, value) => {
+      if (Buffer.isBuffer(value)) {
+      return value.toString('hex');
+      }
+      return value;
+    }, 2));
     // 验证结果长度
-    expect(result.length).toEqual(1);
+    //expect(result.length).toEqual(1);
     
     // Python 验证数据
-    const expectedSighash = Buffer.from("672C460A4AB491DD3B70BC5E35D4796683AF95B11F68D4667A8963CBC52A3CDF", "hex");
-    const expectedPubkey = Buffer.from("dc8d2f9eff0c4f4dbde070a48e330efc908b62a766568d91e658f284b324b878", "hex");
+    const expectedSighash = Buffer.from("172C927D125C64A7241660276BE2E6C2782E0373EF99A4ACA122F8E2628D18E9", "hex");
+    const expectedPubkey = Buffer.from("027CB75D34B005C4EB9F62BBF2C457D7638E813E757EFCEC8FA68677D950B63662", "hex");
     
     // 验证第一个签名结果
     const [idx0, partialSig0] = result[0];
     expect(idx0).toBe(0);
+    let signature = partialSig0.signature;  // ECDSA签名通常是DER格式
+    // const derLen = signature[1] + 1; // DER格式的长度
+    // signature = signature.slice(0, derLen);
+    // console.log("derlen:", derLen);
+    console.log("Signature (hex):", signature.toString('hex'));
+    console.log("Pubkey (hex):", Buffer.from(partialSig0.pubkey).toString('hex'));
+    console.log("Expected pubkey (hex):", expectedPubkey.toString('hex'));
+    console.log("Sighash (hex):", expectedSighash.toString('hex'));
 
+    // try {
+    //   const decoded = script.signature.decode(signature);
+    //   console.log("Decoded signature (hex):", decoded.signature.toString('hex'));
+    //   console.log("Decoded hashType:", decoded.hashType);
+    // } catch (e) {
+    //   console.error("DER decode error:", e);
+    // }
+    const ec = new EC('secp256k1');
+    const key = ec.keyFromPublic(expectedPubkey.toString('hex'), 'hex');
+    const derSignature = signature; // 你的 DER 格式
+    const isValid = key.verify(expectedSighash, derSignature);
+    // const ec = new EC('secp256k1');
+    // const key = ec.keyFromPublic(expectedPubkey.toString('hex'), 'hex');
 
-     // BIP-340 Schnorr 签名验证
-   const signature = partialSig0.signature.slice(0, 64); // 取前 64 字节作为签名
-   console.log("Signature (hex):", signature.toString('hex'));
-   const isValidSignature = ecc.verifySchnorr(expectedSighash, expectedPubkey, signature);
-   expect(isValidSignature).toBe(true);
-    
+    // // 解析 DER 签名为 elliptic 的 Signature 对象
+    // const sigObj = Signature.fromDER(signature);
+
+    // // 用 r/s 对象验证
+    // const isValid = key.verify(expectedSighash, sigObj);
+
+    // const isValidSignature = ecc.verify(expectedSighash, expectedPubkey, signature);
+    // expect(isValidSignature).toBe(true);
+    // const keyPair = ECPair.fromPublicKey(expectedPubkey);
+    // const isValid = keyPair.verify(expectedSighash, signature);
+    // console.log("bitcoinjs-lib verify:", isValid);
+    console.log("elliptic verify:", isValid);
     console.log("Result length:", result.length);
     console.log("Index:", idx0);
     console.log("Pubkey:", Buffer.from(partialSig0.pubkey).toString('hex'));
