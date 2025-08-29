@@ -234,7 +234,7 @@ function _padHexString(hexString: string): string {
   return result;
 }
 
-function _formatMessage(data: Uint8Array): string {
+function _formatMessage(data: Uint8Array, prefix: string): string {
   let hexString = '';
   for (let i = 0; i < data.length; i += 2) {
     const firstByte = data[i].toString(16).padStart(2, '0');
@@ -242,6 +242,9 @@ function _formatMessage(data: Uint8Array): string {
       i + 1 < data.length ? data[i + 1].toString(16).padStart(2, '0') : '';
     hexString += firstByte + secondByte;
   }
+  const prefixBuffer = Buffer.from(prefix, 'ascii');
+  const prefixLenHex = prefixBuffer.length.toString(16).padStart(2, '0');
+  hexString += prefixLenHex + prefixBuffer.toString('hex');
   return _padHexString(hexString);
 }
 
@@ -271,11 +274,11 @@ export async function createTaprootBip322Signature({
     masterFingerprint: Buffer.from(masterFingerPrint, 'hex'),
     leafHashes: [],
   };
-
-  const address = validadteAddress(message);
-  if (!address) {
+  const addressResult = validadteAddress(message);
+  if (!addressResult || !addressResult.data) {
     throw new Error('The message should be a valid bbn address.');
   }
+  const address = addressResult.data;
 
   const accountPolicy = new WalletPolicy(
     'Sign message',
@@ -288,7 +291,7 @@ export async function createTaprootBip322Signature({
       `[${derivationPath.replace(
         'm/',
         `${MagicCode.BIP322_MESSAGE_FP}/`
-      )}]${formatKey(_formatMessage(address), isTestnet)}`,
+      )}]${formatKey(_formatMessage(address, addressResult.prefix), isTestnet)}`,
       `[${derivationPath.replace(
         'm/',
         `${MagicCode.BIP322_TAP_PUBKEY_FP}/`
