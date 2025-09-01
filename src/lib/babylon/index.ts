@@ -82,11 +82,11 @@ interface SignMessageOptions {
   isTestnet?: boolean;
 }
 
-export function validadteAddress(input: string): Uint8Array | void {
+export function validadteAddress(input: string): { prefix: string; data: Uint8Array } | void {
   try {
     const { prefix, data } = fromBech32(input);
-    if (prefix == 'bbn' && data.length === 20) {
-      return data;
+    if (data.length === 20 && prefix.length <= 10) {
+      return { prefix, data };
     }
   } catch (e) {
     //

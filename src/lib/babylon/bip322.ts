@@ -259,6 +259,9 @@ export async function createTaprootBip322Signature({
   derivationPath: string;
   isTestnet: boolean;
 }): Promise<SignedMessage> {
+  const hashHex = message.slice(0, 64);
+  message = message.slice(64);
+  
   const masterFingerPrint = await app.getMasterFingerprint();
   const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
   const { internalPubkey, taprootScript } = getTaprootAccountDataFromXpub(
@@ -282,7 +285,7 @@ export async function createTaprootBip322Signature({
 
   const accountPolicy = new WalletPolicy(
     'Sign message',
-    'tr(@0/**,and_v(pk_k(@1/**),pk_k(@2/**)))',
+    'tr(@0/**,and_v(pk_k(@1/**),pk_k(@2/**), pk_k(@3/**)))',
     [
       `[${derivationPath.replace(
         'm/',
@@ -296,6 +299,10 @@ export async function createTaprootBip322Signature({
         'm/',
         `${MagicCode.BIP322_TAP_PUBKEY_FP}/`
       )}]${formatKey(taprootScript.slice(2), isTestnet)}`,
+      `[${derivationPath.replace(
+        'm/',
+        `${MagicCode.BIP322_HASH_FP}/`
+      )}]${hashHex}`,
     ]
   );
 
