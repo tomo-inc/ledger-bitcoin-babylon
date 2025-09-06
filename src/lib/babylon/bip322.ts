@@ -285,7 +285,7 @@ export async function createTaprootBip322Signature({
 
   const accountPolicy = new WalletPolicy(
     'Sign message',
-    'tr(@0/**,and_v(pk_k(@1/**),pk_k(@2/**), pk_k(@3/**)))',
+    'tr(@0/**,and_v(pk_k(@1/**),and_v(pk_k(@2/**),pk_k(@3/**))))',
     [
       `[${derivationPath.replace(
         'm/',
