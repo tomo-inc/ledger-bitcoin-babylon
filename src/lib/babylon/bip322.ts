@@ -223,10 +223,11 @@ function getTaprootAccountDataFromXpub(
   };
 }
 
-function _padHexString(hexString: string): string {
-  const len = hexString.length / 2;
-  const lenHex = len.toString(16).padStart(2, '0');
+function _padHexString(hexString: string, dataLength: number): string {
+  const len = dataLength;
+  const lenHex = len.toString(16).padStart(2, '0'); 
   let result = lenHex + hexString;
+
   const padNeeded = 64 - result.length;
   if (padNeeded > 0) {
     result += 'fc'.repeat(padNeeded / 2);
@@ -236,16 +237,15 @@ function _padHexString(hexString: string): string {
 
 function _formatMessage(data: Uint8Array, prefix: string): string {
   let hexString = '';
-  for (let i = 0; i < data.length; i += 2) {
-    const firstByte = data[i].toString(16).padStart(2, '0');
-    const secondByte =
-      i + 1 < data.length ? data[i + 1].toString(16).padStart(2, '0') : '';
-    hexString += firstByte + secondByte;
+  for (let i = 0; i < data.length; i++) {
+    const byte = data[i].toString(16).padStart(2, '0');
+    hexString += byte;
   }
+
   const prefixBuffer = Buffer.from(prefix, 'ascii');
   const prefixLenHex = prefixBuffer.length.toString(16).padStart(2, '0');
   hexString += prefixLenHex + prefixBuffer.toString('hex');
-  return _padHexString(hexString);
+  return _padHexString(hexString, data.length);
 }
 
 export async function createTaprootBip322Signature({
@@ -259,9 +259,12 @@ export async function createTaprootBip322Signature({
   derivationPath: string;
   isTestnet: boolean;
 }): Promise<SignedMessage> {
+
+  const OriginalMessage = message;
   const hashHex = message.slice(0, 64);
   message = message.slice(64);
-  
+  const formattedHash = formatKey(hashHex, isTestnet);
+
   const masterFingerPrint = await app.getMasterFingerprint();
   const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
   const { internalPubkey, taprootScript } = getTaprootAccountDataFromXpub(
@@ -269,7 +272,6 @@ export async function createTaprootBip322Signature({
     0,
     isTestnet
   );
-
   // Need to update input derivation path so the ledger can recognize the inputs to sign
   const inputDerivation: TapBip32Derivation = {
     path: `${derivationPath}/0/0`,
@@ -282,7 +284,6 @@ export async function createTaprootBip322Signature({
     throw new Error('The message should be a valid bbn address.');
   }
   const address = addressResult.data;
-
   const accountPolicy = new WalletPolicy(
     'Sign message',
     'tr(@0/**,and_v(pk_k(@1/**),and_v(pk_k(@2/**),pk_k(@3/**))))',
@@ -302,14 +303,14 @@ export async function createTaprootBip322Signature({
       `[${derivationPath.replace(
         'm/',
         `${MagicCode.BIP322_HASH_FP}/`
-      )}]${hashHex}`,
+      )}]${formattedHash}`,
     ]
   );
 
   return createMessageSignature(
     app,
     accountPolicy,
-    message,
+    OriginalMessage,
     taprootScript,
     {
       tapBip32Derivation: [inputDerivation],

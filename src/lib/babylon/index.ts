@@ -87,22 +87,21 @@ export function validadteAddress(input: string): { prefix: string; data: Uint8Ar
     const { prefix, data } = fromBech32(input);
     if (data.length === 20 && prefix.length <= 10) {
       return { prefix, data };
+    } else {
+      console.log("Validation FAILED - data.length:", data.length, "prefix.length:", prefix.length);
     }
   } catch (e) {
-    //
+    console.log("fromBech32 threw error:", e);
   }
+  
+  return undefined;
 }
 
 export async function signMessage(
   options: SignMessageOptions
 ): Promise<SignedMessage> {
+
   const derivationPath = options.derivationPath ?? `m/86'/0'/0'`;
-
-  const result = validadteAddress(options.message);
-  if (!result) {
-    throw new Error('The message should be a valid bbn address.');
-  }
-
   if (options.type === 'bip322-simple') {
     const {
       transport,
