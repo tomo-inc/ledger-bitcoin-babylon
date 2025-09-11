@@ -1,9 +1,17 @@
 {
   "name": "ledger-bitcoin-babylon",
-  "version": "v0.3.2",
+  "version": "v0.3.3",
   "description": "Ledger Hardware Wallet Babylon Application Client",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "module": "./dist/index.esm.js",
   "main": "build/main/index.js",
-  "typings": "build/main/index.d.ts",
+  "types": "build/main/index.d.ts",
   "repository": "https://github.com/tomo-inc/ledger-bitcoin-babylon",
   "license": "Apache-2.0",
   "keywords": [
