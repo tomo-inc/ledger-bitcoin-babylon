@@ -56,8 +56,8 @@ jobs:
 
       - name: Verify version format
         run: |
-          if [[ ! $GITHUB_REF =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$ ]]; then
-            echo "::error::Invalid version format: $GITHUB_REF. Must be vX.Y.Z or vX.Y.Z-prerelease"
+          if [[ ! $GITHUB_REF =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z]+\.[0-9]+)?$ ]]; then
+            echo "::error::Invalid version format: $GITHUB_REF. Must be vX.Y.Z or vX.Y.Z-prerelease.N"
             exit 1
           fi
           VERSION=${GITHUB_REF#refs/tags/v}
