@@ -9,7 +9,7 @@ import {
   SignedMessage
 } from './types';
 import { signMessageBIP322 } from './bip322';
-import { isTestnetPath, isFullFiveLevelPath, validadteAddress } from './utils';
+import { isTestnetPath, isFullFiveLevelPath } from './utils';
 
 interface SignMessageOptions {
   transport: Transport;
@@ -85,9 +85,7 @@ export async function signMessage(
     throw new Error('signMessage: message must be a non-empty string');
   }
   console.log("Signing message:", message);
-  if (!validadteAddress(message)) {
-    throw new Error('The message should be a valid bbn address.');
-  }
+
   if (!isFullFiveLevelPath(derivationPath)) {
       throw new Error('The derivation path should be a full five-level path.');
   }

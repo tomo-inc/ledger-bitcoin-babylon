@@ -1,18 +1,4 @@
-import { fromBech32 } from '@cosmjs/encoding';
 import { AddressType } from './types';
-
-export function validadteAddress(input: string): Uint8Array | void {
- try {
-    const { prefix, data } = fromBech32(input);
-    if (prefix == 'bbn' && data.length === 20) {
-      return data;
-    }else {
-      throw new Error('The psbt does not contain a taproot script.');
-    }
-  } catch (e) {
-    throw new Error('The psbt does not contain a taproot script.');
-  }
-}
 
 export function isTestnetPath(path: string): boolean {
   const parts = path.split('/');

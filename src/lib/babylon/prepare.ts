@@ -7,7 +7,7 @@ import { encodeStakingTxPolicyToTLV,
 import AppClient from '../appClient';
 import Transport from '@ledgerhq/hw-transport';
 import { WalletPolicy } from '../policy';
-import { validadteAddress, isFullFiveLevelPath, getAddressTypeFromPath } from './utils';
+import { isFullFiveLevelPath, getAddressTypeFromPath } from './utils';
 import { AddressType } from './types'
 
 async function _prepare(
@@ -310,15 +310,13 @@ export async function signMessagePathPolicy({
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
-  console.log("message:", message);
-  const address = validadteAddress(message);
-  if (!address) {
-    throw new Error('The message should be a valid bbn address.');
+  if (message.length == 0 || message.length > 128) {
+      throw new Error('The message should be a non-empty string with a maximum length of 128 characters.');
   }
-   console.log("Address:", address);
-   const tlvBuffer = encodeSignMessagePolicyToTLV(
+  console.log("message:", message);
+  const tlvBuffer = encodeSignMessagePolicyToTLV(
     derivationPath,
-    Buffer.from(address),
+    Buffer.from(message),
     pubkey
   );
   const app = new AppClient(transport);
