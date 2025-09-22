@@ -17,7 +17,20 @@ message                       TAG 0x33  LEN 00 XX      VALUE message BUFFER
 message_pubkey:               TAG 0x34  LEN 32         VALUE pubkey BUFFER
 txid:                         TAG 0x35  LEN 00 20      VALUE txid BUFFER
 burning address:              TAG 0x36  LEN 00 XX      VALUE address BUFFER
+bip32fullpath:                TAG 0x37  LEN 00 XX      VALUE bip32fullpath BUFFER
 */
+
+function parseBip32Path(path: string): number[] {
+  // 例如 m/86'/1'/0'/0/0
+  const parts = path.split('/');
+  if (parts[0] !== 'm' || parts.length !== 6) throw new Error('Invalid BIP32 path');
+  return parts.slice(1).map(p => {
+    if (p.endsWith("'")) {
+      return (parseInt(p.replace("'", ""), 10) | 0x80000000) >>> 0;
+    }
+    return parseInt(p, 10) >>> 0;
+  });
+}
 
 /**
  * Encodes staking transaction policy parameters into a TLV (Tag-Length-Value) formatted Buffer.
@@ -31,6 +44,7 @@ burning address:              TAG 0x36  LEN 00 XX      VALUE address BUFFER
  */
 
 export function encodeStakingTxPolicyToTLV(
+  bip32Path: string,
   timelockBlocks: number,
   finalityProviders: string[],
   covenantThreshold: number,
@@ -42,6 +56,13 @@ export function encodeStakingTxPolicyToTLV(
   buffers.push(Buffer.from([0x77])); // TAG
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
   buffers.push(Buffer.from([0x02])); // VALUE (1 = Staking)
+
+  const pathArray = parseBip32Path(bip32Path);
+  const pathBuffer = Buffer.alloc(4 * pathArray.length);
+  pathArray.forEach((v, i) => pathBuffer.writeUInt32BE(v, i * 4));
+  buffers.push(Buffer.from([0x37])); // TAG
+  buffers.push(Buffer.from([0x00, pathBuffer.length])); // LEN (2 bytes)
+  buffers.push(pathBuffer); // VALUE
 
   // Finality provider count: TAG 0xf9 LEN 00 0n VALUE count
   const fpCount = finalityProviders.length;
@@ -115,6 +136,7 @@ export function encodeStakingTxPolicyToTLV(
  * @throws {Error} If any public key is not 32 bytes in length.
  */
 export function encodeSlashingTxPolicyToTLV(
+  bip32Path: string,
   timelockBlocks: number,
   finalityProviders: string[],
   covenantThreshold: number,
@@ -132,6 +154,12 @@ export function encodeSlashingTxPolicyToTLV(
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
   buffers.push(Buffer.from([0x00])); // VALUE (0 = SLASHING)
 
+  const pathArray = parseBip32Path(bip32Path);
+  const pathBuffer = Buffer.alloc(4 * pathArray.length);
+  pathArray.forEach((v, i) => pathBuffer.writeUInt32BE(v, i * 4));
+  buffers.push(Buffer.from([0x37])); // TAG
+  buffers.push(Buffer.from([0x00, pathBuffer.length])); // LEN (2 bytes)
+  buffers.push(pathBuffer); // VALUE
   // Finality provider count: TAG 0xf9 LEN 00 0n VALUE count
   const fpCount = finalityProviders.length;
   buffers.push(Buffer.from([0xf9])); // TAG
@@ -217,6 +245,7 @@ export function encodeSlashingTxPolicyToTLV(
  * @throws {Error} If any public key is not 32 bytes in length.
  */
 export function encodeUnbondPolicyToTLV(
+  bip32Path: string,
   timelockBlocks: number,
   finalityProviders: string[],
   covenantThreshold: number,
@@ -232,6 +261,13 @@ export function encodeUnbondPolicyToTLV(
   buffers.push(Buffer.from([0x77])); // TAG
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
   buffers.push(Buffer.from([0x03])); // VALUE (0 = SLASHING)
+
+  const pathArray = parseBip32Path(bip32Path);
+  const pathBuffer = Buffer.alloc(4 * pathArray.length);
+  pathArray.forEach((v, i) => pathBuffer.writeUInt32BE(v, i * 4));
+  buffers.push(Buffer.from([0x37])); // TAG
+  buffers.push(Buffer.from([0x00, pathBuffer.length])); // LEN (2 bytes)
+  buffers.push(pathBuffer); // VALUE
 
   // Finality provider count: TAG 0xf9 LEN 00 0n VALUE count
   const fpCount = finalityProviders.length;
@@ -314,6 +350,7 @@ export function encodeUnbondPolicyToTLV(
  * @throws {Error} If any public key is not 32 bytes in length.
  */
 export function encodeWithdrawPolicyToTLV(
+  bip32Path: string,
   timelockBlocks: number,
 ): Buffer {
   const buffers: Buffer[] = [];
@@ -322,6 +359,13 @@ export function encodeWithdrawPolicyToTLV(
   buffers.push(Buffer.from([0x77])); // TAG
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
   buffers.push(Buffer.from([0x04])); // VALUE (0 = SLASHING)
+
+  const pathArray = parseBip32Path(bip32Path);
+  const pathBuffer = Buffer.alloc(4 * pathArray.length);
+  pathArray.forEach((v, i) => pathBuffer.writeUInt32BE(v, i * 4));
+  buffers.push(Buffer.from([0x37])); // TAG
+  buffers.push(Buffer.from([0x00, pathBuffer.length])); // LEN (2 bytes)
+  buffers.push(pathBuffer); // VALUE
 
   buffers.push(Buffer.from([0x71])); // TAG
   buffers.push(Buffer.from([0x00, 0x08])); // LEN (2 bytes)
@@ -335,8 +379,9 @@ export function encodeWithdrawPolicyToTLV(
 }
 
 export function encodeSignMessagePolicyToTLV(
-  message: string,
-  pubkey: string,
+  bip32Path: string,
+  message: Buffer,
+  pubkey: Buffer,
 ): Buffer {
   const buffers: Buffer[] = [];
 
@@ -345,20 +390,27 @@ export function encodeSignMessagePolicyToTLV(
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
   buffers.push(Buffer.from([0x05])); // VALUE (0 = SLASHING)
 
+  const pathArray = parseBip32Path(bip32Path);
+  const pathBuffer = Buffer.alloc(4 * pathArray.length);
+  pathArray.forEach((v, i) => pathBuffer.writeUInt32BE(v, i * 4));
+  buffers.push(Buffer.from([0x37])); // TAG
+  buffers.push(Buffer.from([0x00, pathBuffer.length])); // LEN (2 bytes)
+  buffers.push(pathBuffer); // VALUE
   // Message: TAG 0x33 LEN 00 XX VALUE message BUFFER
-  const messageBuffer = Buffer.from(message, 'utf8');
+  //const messageBuffer = Buffer.from(message, 'hex');
+  console.log("Message Buffer:", message);
+  console.log("Message Length:", message.length);
   buffers.push(Buffer.from([0x33])); // TAG
-  buffers.push(Buffer.from([0x00, messageBuffer.length])); // LEN (2 bytes)
-  buffers.push(messageBuffer); // VALUE
+  buffers.push(Buffer.from([0x00, message.length])); // LEN (2 bytes)
+  buffers.push(message); // VALUE
 
   // Message pubkey: TAG 0x34 LEN 32 VALUE pubkey BUFFER
-  const pubkeyBuffer = Buffer.from(pubkey, 'hex');
-  if (pubkeyBuffer.length !== 32) {
-    throw new Error(`Invalid pubkey length: ${pubkeyBuffer.length}, expected 32`);
+  if (pubkey.length !== 32) {
+    throw new Error(`Invalid pubkey length: ${pubkey.length}, expected 32`);
   }
   buffers.push(Buffer.from([0x34])); // TAG
   buffers.push(Buffer.from([0x00, 0x20])); // LEN (32 bytes)
-  buffers.push(pubkeyBuffer); // VALUE
+  buffers.push(pubkey); // VALUE
 
   return Buffer.concat(buffers as Uint8Array[]);
 }

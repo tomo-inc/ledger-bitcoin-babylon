@@ -1,28 +1,20 @@
-import { Script } from '@cmdcode/tapscript';
-
 import Transport from '@ledgerhq/hw-transport';
 import { base64 } from '@scure/base';
 import { Transaction } from '@scure/btc-signer';
 
 import AppClient from '../appClient';
 import { WalletPolicy } from '../policy';
-import { computeLeafHash, tryParseTimelockPath } from './utils';
 import { getTaprootScript } from './psbt';
 import {
-  AddressType,
-  MessageSigningProtocols,
-  SignedMessage,
+  SignedMessage
 } from './types';
-
-import { timelockPathPolicy } from './prepare'
+import { signMessageBIP322 } from './bip322';
+import { isTestnetPath, isFullFiveLevelPath } from './utils';
 
 interface SignMessageOptions {
   transport: Transport;
   message: string;
-  type: 'ecdsa' | 'bip322-simple'; 
-  addressType?: AddressType;
-  derivationPath?: string;
-  isTestnet?: boolean;
+  derivationPath: string;
 }
 
 
@@ -76,69 +68,46 @@ export async function signPsbt({
   return transaction;
 }
 
-export async function tryParsePsbt(
-  transport: Transport,
-  psbtBase64: string,
-  isTestnet = false,
-  leafHash?: Buffer
-): Promise<WalletPolicy | void> {
-  const derivationPath = `m/86'/${isTestnet ? 1 : 0}'/0'`;
-
-  const script = getTaprootScript(psbtBase64);
-  if (!script) {
-    throw new Error(`No script found in psbt`);
-  }
-
-  leafHash = leafHash ? leafHash : computeLeafHash(psbtBase64);
-
-  const decodedScript = Script.decode(script);
-
-  const parsed = tryParseTimelockPath(decodedScript);
-  if (parsed) {
-    return timelockPathPolicy({
-      transport,
-      params: {
-        leafHash,
-        timelockBlocks: Number(`0x${parsed[parsed.length - 1]}`),
-      },
-      derivationPath,
-      isTestnet,
-    });
-  }
-}
-
 
 export async function signMessage(
   options: SignMessageOptions
 ): Promise<SignedMessage> {
 
-  const fakeSignature = Buffer.from('deadbeef', 'hex').toString('base64');
-  const signature = fakeSignature;
-  return {
-    signature,
-    protocol: MessageSigningProtocols.BIP322,
-  };
+  const {
+    transport,
+    message,
+    derivationPath
+  } = options;
+  if (!transport) {
+    throw new Error('signMessage: transport is required');
+  }
+  if (typeof message !== 'string' || message.length === 0) {
+    throw new Error('signMessage: message must be a non-empty string');
+  }
+  console.log("Signing message:", message);
+
+  if (!isFullFiveLevelPath(derivationPath)) {
+      throw new Error('The derivation path should be a full five-level path.');
+  }
+  const isTestnet = isTestnetPath(derivationPath);  
+
+  return signMessageBIP322({
+      transport,
+      message,
+      derivationPath,
+      isTestnet
+    });
 }
 export { 
-  timelockPathPolicy,
+  withdrawPathPolicy,
   slashingPathPolicy,
   stakingTxPolicy,
   unbondingPathPolicy
 } from './prepare';
 
-export { 
-  computeLeafHash, 
-  tryParseTimelockPath 
-} from './utils';
-
 // 如果有这些类型定义，也需要导出
-export type { 
-  SlashingPolicy, 
+export type {  
   SlashingParams, 
-  StakingTxPolicy, 
-  StakingTxParams, 
-  TimelockPolicy, 
-  TimelockParams, 
-  UnbondingPolicy, 
+  StakingTxParams,  
   UnbondingParams 
 } from './prepare';
