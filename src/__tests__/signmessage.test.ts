@@ -14,9 +14,22 @@ describe('signmessage policy', () => {
   });
 
 
-    it("can sign message", async () => {
+    it("can sign message v2", async () => {
       jest.setTimeout(30000);
       const message = '392376b1ca863487087702a0f74e90d44cd1f339a5776687c591bf5402395511bbn1dppj9xellvzrh7x60vft4u8cpkyrvv3camt8ps';
+      const result = await signMessage({
+        transport,
+        message,
+        type: 'bip322-simple',
+        isTestnet: true,
+        derivationPath: `m/86'/1'/0'/0/0`,
+      });
+      expect(result).toBeDefined();
+    });
+
+      it("can sign message v1", async () => {
+      jest.setTimeout(30000);
+      const message = 'bbn1dppj9xellvzrh7x60vft4u8cpkyrvv3camt8ps';
       const result = await signMessage({
         transport,
         message,
