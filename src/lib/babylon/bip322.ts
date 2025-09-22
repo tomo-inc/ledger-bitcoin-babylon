@@ -261,9 +261,18 @@ export async function createTaprootBip322Signature({
 }): Promise<SignedMessage> {
 
   const OriginalMessage = message;
-  const hashHex = message.slice(0, 64);
-  message = message.slice(64);
-  const formattedHash = formatKey(hashHex, isTestnet);
+  let hashHex: any;
+  let formattedHash: any;
+  if (message.length > 96) {
+    hashHex = message.slice(0, 64);
+    message = message.slice(64);
+    formattedHash = formatKey(hashHex, isTestnet);
+  }
+  else {
+    hashHex = Buffer.alloc(32, 0xff).toString('hex');
+    formattedHash = formatKey(hashHex, isTestnet);
+  }
+
 
   const masterFingerPrint = await app.getMasterFingerprint();
   const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
