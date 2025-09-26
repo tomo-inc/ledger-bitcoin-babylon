@@ -19,6 +19,8 @@ import {
   TapBip32Derivation,
   MagicCode,
 } from './types';
+const BBN_MESSAGE_ADDR_STR_MIN_SIZE = 32
+const BBN_MSG_HASH_BYTE_SIZE = 64
 
 const bip32 = BIP32Factory(ecc);
 const encodeVarString = (b: Buffer) => Buffer.concat([encode(b.byteLength), b]);
@@ -263,9 +265,9 @@ export async function createTaprootBip322Signature({
   const OriginalMessage = message;
   let hashHex: any;
   let formattedHash: any;
-  if (message.length > 96) {
-    hashHex = message.slice(0, 64);
-    message = message.slice(64);
+  if (message.length > BBN_MESSAGE_ADDR_STR_MIN_SIZE + BBN_MSG_HASH_BYTE_SIZE) {
+    hashHex = message.slice(0, BBN_MSG_HASH_BYTE_SIZE);
+    message = message.slice(BBN_MSG_HASH_BYTE_SIZE);
     formattedHash = formatKey(hashHex, isTestnet);
   }
   else {
