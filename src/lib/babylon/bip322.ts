@@ -19,6 +19,8 @@ import {
   TapBip32Derivation,
   MagicCode,
 } from './types';
+const BBN_MESSAGE_ADDR_STR_MIN_SIZE = 32
+const BBN_MSG_HASH_BYTE_SIZE = 64
 
 const bip32 = BIP32Factory(ecc);
 const encodeVarString = (b: Buffer) => Buffer.concat([encode(b.byteLength), b]);
@@ -223,10 +225,11 @@ function getTaprootAccountDataFromXpub(
   };
 }
 
-function _padHexString(hexString: string): string {
-  const len = hexString.length / 2;
-  const lenHex = len.toString(16).padStart(2, '0');
+function _padHexString(hexString: string, dataLength: number): string {
+  const len = dataLength;
+  const lenHex = len.toString(16).padStart(2, '0'); 
   let result = lenHex + hexString;
+
   const padNeeded = 64 - result.length;
   if (padNeeded > 0) {
     result += 'fc'.repeat(padNeeded / 2);
@@ -234,15 +237,17 @@ function _padHexString(hexString: string): string {
   return result;
 }
 
-function _formatMessage(data: Uint8Array): string {
+function _formatMessage(data: Uint8Array, prefix: string): string {
   let hexString = '';
-  for (let i = 0; i < data.length; i += 2) {
-    const firstByte = data[i].toString(16).padStart(2, '0');
-    const secondByte =
-      i + 1 < data.length ? data[i + 1].toString(16).padStart(2, '0') : '';
-    hexString += firstByte + secondByte;
+  for (let i = 0; i < data.length; i++) {
+    const byte = data[i].toString(16).padStart(2, '0');
+    hexString += byte;
   }
-  return _padHexString(hexString);
+
+  const prefixBuffer = Buffer.from(prefix, 'ascii');
+  const prefixLenHex = prefixBuffer.length.toString(16).padStart(2, '0');
+  hexString += prefixLenHex + prefixBuffer.toString('hex');
+  return _padHexString(hexString, data.length);
 }
 
 export async function createTaprootBip322Signature({
@@ -256,6 +261,21 @@ export async function createTaprootBip322Signature({
   derivationPath: string;
   isTestnet: boolean;
 }): Promise<SignedMessage> {
+
+  const OriginalMessage = message;
+  let hashHex: any;
+  let formattedHash: any;
+  if (message.length > BBN_MESSAGE_ADDR_STR_MIN_SIZE + BBN_MSG_HASH_BYTE_SIZE) {
+    hashHex = message.slice(0, BBN_MSG_HASH_BYTE_SIZE);
+    message = message.slice(BBN_MSG_HASH_BYTE_SIZE);
+    formattedHash = formatKey(hashHex, isTestnet);
+  }
+  else {
+    hashHex = Buffer.alloc(32, 0xff).toString('hex');
+    formattedHash = formatKey(hashHex, isTestnet);
+  }
+
+
   const masterFingerPrint = await app.getMasterFingerprint();
   const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
   const { internalPubkey, taprootScript } = getTaprootAccountDataFromXpub(
@@ -263,7 +283,6 @@ export async function createTaprootBip322Signature({
     0,
     isTestnet
   );
-
   // Need to update input derivation path so the ledger can recognize the inputs to sign
   const inputDerivation: TapBip32Derivation = {
     path: `${derivationPath}/0/0`,
@@ -271,15 +290,14 @@ export async function createTaprootBip322Signature({
     masterFingerprint: Buffer.from(masterFingerPrint, 'hex'),
     leafHashes: [],
   };
-
-  const address = validadteAddress(message);
-  if (!address) {
+  const addressResult = validadteAddress(message);
+  if (!addressResult || !addressResult.data) {
     throw new Error('The message should be a valid bbn address.');
   }
-
+  const address = addressResult.data;
   const accountPolicy = new WalletPolicy(
     'Sign message',
-    'tr(@0/**,and_v(pk_k(@1/**),pk_k(@2/**)))',
+    'tr(@0/**,and_v(pk_k(@1/**),and_v(pk_k(@2/**),pk_k(@3/**))))',
     [
       `[${derivationPath.replace(
         'm/',
@@ -288,18 +306,22 @@ export async function createTaprootBip322Signature({
       `[${derivationPath.replace(
         'm/',
         `${MagicCode.BIP322_MESSAGE_FP}/`
-      )}]${formatKey(_formatMessage(address), isTestnet)}`,
+      )}]${formatKey(_formatMessage(address, addressResult.prefix), isTestnet)}`,
       `[${derivationPath.replace(
         'm/',
         `${MagicCode.BIP322_TAP_PUBKEY_FP}/`
       )}]${formatKey(taprootScript.slice(2), isTestnet)}`,
+      `[${derivationPath.replace(
+        'm/',
+        `${MagicCode.BIP322_HASH_FP}/`
+      )}]${formattedHash}`,
     ]
   );
 
   return createMessageSignature(
     app,
     accountPolicy,
-    message,
+    OriginalMessage,
     taprootScript,
     {
       tapBip32Derivation: [inputDerivation],
