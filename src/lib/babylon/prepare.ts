@@ -50,10 +50,10 @@ export async function slashingPathPolicy({
   if (!isFullFiveLevelPath(derivationPath)) {
         throw new Error('The derivation path should be a full five-level path.');
   }
-  const addressType = getAddressTypeFromPath(derivationPath);
-  if (addressType !== AddressType.p2tr) {
-    throw new Error('Unbonding transactions currently only support taproot addresses.');
-  }
+  // const addressType = getAddressTypeFromPath(derivationPath);
+  // if (addressType !== AddressType.p2tr) {
+  //   throw new Error('Unbonding transactions currently only support taproot addresses.');
+  // }
   const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
@@ -182,10 +182,10 @@ export async function unbondingPathPolicy({
   if (!isFullFiveLevelPath(derivationPath)) {
         throw new Error('The derivation path should be a full five-level path.');
   }
-  const addressType = getAddressTypeFromPath(derivationPath);
-  if (addressType !== AddressType.p2tr) {
-    throw new Error('Unbonding transactions currently only support taproot addresses.');
-  }
+  // const addressType = getAddressTypeFromPath(derivationPath);
+  // if (addressType !== AddressType.p2tr) {
+  //   throw new Error('Unbonding transactions currently only support taproot addresses.');
+  // }
   const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
@@ -240,10 +240,10 @@ export async function withdrawPathPolicy({
   if (!isFullFiveLevelPath(derivationPath)) {
       throw new Error('The derivation path should be a full five-level path.');
   }
-  const addressType = getAddressTypeFromPath(derivationPath);
-  if (addressType !== AddressType.p2tr) {
-    throw new Error('Unbonding transactions currently only support taproot addresses.');
-  }
+  // const addressType = getAddressTypeFromPath(derivationPath);
+  // if (addressType !== AddressType.p2tr) {
+  //   throw new Error('Unbonding transactions currently only support taproot addresses.');
+  // }
   const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
