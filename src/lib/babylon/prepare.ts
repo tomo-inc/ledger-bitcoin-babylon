@@ -50,17 +50,23 @@ export async function slashingPathPolicy({
   if (!isFullFiveLevelPath(derivationPath)) {
         throw new Error('The derivation path should be a full five-level path.');
   }
-  // const addressType = getAddressTypeFromPath(derivationPath);
-  // if (addressType !== AddressType.p2tr) {
-  //   throw new Error('Unbonding transactions currently only support taproot addresses.');
-  // }
+
   const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     threeLevelPath
   );
-  const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
+  
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
+   const keys: string[] = [];
    keys.push(
     `[${threeLevelPath.replace(
       'm/',
@@ -182,17 +188,22 @@ export async function unbondingPathPolicy({
   if (!isFullFiveLevelPath(derivationPath)) {
         throw new Error('The derivation path should be a full five-level path.');
   }
-  // const addressType = getAddressTypeFromPath(derivationPath);
-  // if (addressType !== AddressType.p2tr) {
-  //   throw new Error('Unbonding transactions currently only support taproot addresses.');
-  // }
+
   const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     threeLevelPath
   );
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
   const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
    keys.push(
     `[${threeLevelPath.replace(
       'm/',
@@ -240,17 +251,22 @@ export async function withdrawPathPolicy({
   if (!isFullFiveLevelPath(derivationPath)) {
       throw new Error('The derivation path should be a full five-level path.');
   }
-  // const addressType = getAddressTypeFromPath(derivationPath);
-  // if (addressType !== AddressType.p2tr) {
-  //   throw new Error('Unbonding transactions currently only support taproot addresses.');
-  // }
   const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
     threeLevelPath
   );
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
+
   const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
    keys.push(
     `[${threeLevelPath.replace(
       'm/',
