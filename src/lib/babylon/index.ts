@@ -68,17 +68,12 @@ export async function signPsbt({
   const transaction = Transaction.fromPSBT(base64.decode(psbtBase64));
   for (const signature of signatures) {
     const idx = signature[0];
-    
-    // 检测输入的地址类型
     const addressType = detectInputAddressType(psbtBase64, idx);
     
     if (hasScript) {
-      // Taproot script path
       let processedSignature = signature[1].signature;
       
-      // 对于Schnorr签名，确保是64字节
       if (addressType === 'p2tr' && processedSignature.length > 64) {
-        // 如果是65字节（包含sighash flag），取前64字节
         if (processedSignature.length === 65) {
           processedSignature = processedSignature.slice(0, 64);
         } else {
@@ -102,11 +97,9 @@ export async function signPsbt({
         true
       );
     } else {
-      // Key path spend 或 native segwit
       let processedSignature = signature[1].signature;
       
       if (addressType === 'p2tr') {
-        // Taproot key path: 使用Schnorr签名，确保是64字节
         if (processedSignature.length > 64) {
           if (processedSignature.length === 65) {
             processedSignature = processedSignature.slice(0, 64);
@@ -123,7 +116,6 @@ export async function signPsbt({
           true
         );
       } else if (addressType === 'p2wpkh') {
-        // Native SegWit: 使用ECDSA签名，保持DER格式
         transaction.updateInput(
           idx,
           {
@@ -134,7 +126,6 @@ export async function signPsbt({
           true
         );
       } else {
-        // 未知类型，尝试taproot key path作为默认
         console.warn(`Unknown address type for input ${idx}, defaulting to taproot key path`);
         if (processedSignature.length > 64) {
           if (processedSignature.length === 65) {
@@ -193,7 +184,6 @@ export {
   unbondingPathPolicy
 } from './prepare';
 
-// 如果有这些类型定义，也需要导出
 export type {  
   SlashingParams, 
   StakingTxParams,  

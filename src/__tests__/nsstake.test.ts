@@ -1,12 +1,7 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
 import { AppClient, PsbtV2 } from '..';
 import { stakingTxPolicy } from '../lib/babylon/index';
-// import * as ecc from 'tiny-secp256k1';
-// import * as ECPairFactory from 'ecpair';
-//import { script } from 'bitcoinjs-lib';
 import { ec as EC } from 'elliptic';
-// import * as bitcoin from 'bitcoinjs-lib';
-//const ECPair = ECPairFactory.ECPairFactory(ecc);
 
 describe('stakingTxPolicy', () => {
   let transport: any;
