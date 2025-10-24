@@ -405,13 +405,14 @@ export function encodeSignMessagePolicyToTLV(
   buffers.push(message); // VALUE
 
   // Message pubkey: TAG 0x34 LEN 32 VALUE pubkey BUFFER
-  if (pubkey.length !== 32) {
-    throw new Error(`Invalid pubkey length: ${pubkey.length}, expected 32`);
+  if (pubkey.length == 32) {
+    //console.log("pubkey:", pubkey);
+    //throw new Error(`Invalid pubkey length: ${pubkey.length}, expected 32`);
+    
+    buffers.push(Buffer.from([0x34])); // TAG
+    buffers.push(Buffer.from([0x00, 0x20])); // LEN (32 bytes)
+    buffers.push(pubkey); // VALUE
   }
-  buffers.push(Buffer.from([0x34])); // TAG
-  buffers.push(Buffer.from([0x00, 0x20])); // LEN (32 bytes)
-  buffers.push(pubkey); // VALUE
-
   return Buffer.concat(buffers as Uint8Array[]);
 }
 

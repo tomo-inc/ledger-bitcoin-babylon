@@ -319,7 +319,18 @@ export async function signMessagePathPolicy({
   );
   const keys: string[] = [];
  
-  const descriptorTemplate = "tr(@0/**)";
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
+  console.log("Derivation Path for Sign Message Policy:", derivationPath);
+  console.log("descriptorTemplate:", descriptorTemplate);
+  
   keys.push(
     `[${threeLevelPath.replace(
       'm/',

@@ -155,36 +155,50 @@ function getNativeSegwitAccountDataFromXpub(
 export async function createSegwitBip322Signature({
   message,
   app,
-  derivationPath
+  derivationPath,
+  isTestnet = false
 }: {
   message: string;
   app: AppClient;
   derivationPath: string;
   isTestnet: boolean;
 }): Promise<SignedMessage> {
+  const transport = app.transport;
   const masterFingerPrint = await app.getMasterFingerprint();
-  const extendedPublicKey = await app.getExtendedPubkey(derivationPath);
+  console.log("Master Fingerprint:", masterFingerPrint);
+  console.log("Derivation Path:", derivationPath);
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
+  console.log("Three Level Path:", threeLevelPath);
+  const extendedPublicKey = await app.getExtendedPubkey(threeLevelPath);
+  console.log("Extended Public Key:", extendedPublicKey);
+  console.log("extendedPublicKey:", extendedPublicKey);
   const { publicKey, witnessScript } = getNativeSegwitAccountDataFromXpub(
     extendedPublicKey,
-    0
+    0,
+    isTestnet
   );
-
+  console.log("createSegwitBip322Signature Public Key:", publicKey.toString('hex'));
   const inputDerivation: Bip32Derivation = {
-    path: `${derivationPath}/0/0`,
+    path: derivationPath,
     pubkey: publicKey,
     masterFingerprint: Buffer.from(masterFingerPrint, 'hex'),
   };
-
-  const accountPolicy = new WalletPolicy('Sign message', 'wpkh(@0/**)', [
-    `[${derivationPath.replace(
-      'm/',
-      `${masterFingerPrint}/`
-    )}]${extendedPublicKey}`,
-  ]);
-
+  console.log("Input Derivation:", inputDerivation);
+   const params = {
+      message:message,
+      pubkey:Buffer.from(witnessScript.slice(2)),
+    };
+  const policy = await signMessagePathPolicy({
+      transport,
+      params,
+      derivationPath,
+      isTestnet
+    });
+  console.log("Policy created");
+  console.log("policy:", policy);
   return createMessageSignature(
     app,
-    accountPolicy,
+    policy,
     message,
     witnessScript,
     {
@@ -245,7 +259,7 @@ export async function createTaprootBip322Signature({
     0,
     isTestnet
   );
-
+  console.log("createTaprootBip322Signature Internal Public Key:", internalPubkey.toString('hex'));
   const inputDerivation: TapBip32Derivation = {
     path: derivationPath,
     pubkey: internalPubkey,
@@ -289,13 +303,15 @@ export async function signMessageBIP322({
   derivationPath: string;
   isTestnet?: boolean;
 }): Promise<SignedMessage> {
-
+  console.log("Derivation Path:", derivationPath);
   const addressType = getAddressTypeFromPath(derivationPath);
+  console.log("Address Type:", addressType);
   if (!addressType) {
     throw new Error('The derivation path is not valid.');
   }
   const app = new AppClient(transport);
   if (addressType === AddressType.p2tr) {
+    console.log("Creating Taproot BIP322 Signature");
     return createTaprootBip322Signature({
       message,
       app,
@@ -303,7 +319,7 @@ export async function signMessageBIP322({
       isTestnet
     });
   }
-
+  console.log("12 Creating Segwit BIP322 Signature");
   return createSegwitBip322Signature({
     message,
     app,

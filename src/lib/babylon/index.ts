@@ -10,11 +10,42 @@ import {
 } from './types';
 import { signMessageBIP322 } from './bip322';
 import { isTestnetPath, isFullFiveLevelPath } from './utils';
+import { PsbtV2 } from '../psbtv2';
 
 interface SignMessageOptions {
   transport: Transport;
   message: string;
   derivationPath: string;
+}
+
+/**
+ * 检测PSBT输入的地址类型
+ */
+function detectInputAddressType(psbtBase64: string, inputIndex: number): 'p2tr' | 'p2wpkh' | 'unknown' {
+  try {
+    const psbt = new PsbtV2();
+    psbt.deserialize(Buffer.from(base64.decode(psbtBase64)));
+    
+    // 检查是否有taproot相关的字段
+    const witnessUtxo = psbt.getInputWitnessUtxo(inputIndex);
+    if (witnessUtxo) {
+      const scriptPubKey = witnessUtxo.scriptPubKey;
+      
+      // P2TR脚本格式: OP_1 <32-byte-pubkey> (长度34字节，以0x5120开头)
+      if (scriptPubKey.length === 34 && scriptPubKey[0] === 0x51 && scriptPubKey[1] === 0x20) {
+        return 'p2tr';
+      }
+      
+      // P2WPKH脚本格式: OP_0 <20-byte-pubkey-hash> (长度22字节，以0x0014开头)
+      if (scriptPubKey.length === 22 && scriptPubKey[0] === 0x00 && scriptPubKey[1] === 0x14) {
+        return 'p2wpkh';
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to detect address type:', error);
+  }
+  
+  return 'unknown';
 }
 
 
@@ -37,31 +68,88 @@ export async function signPsbt({
   const transaction = Transaction.fromPSBT(base64.decode(psbtBase64));
   for (const signature of signatures) {
     const idx = signature[0];
-
+    
+    // 检测输入的地址类型
+    const addressType = detectInputAddressType(psbtBase64, idx);
+    
     if (hasScript) {
+      // Taproot script path
+      let processedSignature = signature[1].signature;
+      
+      // 对于Schnorr签名，确保是64字节
+      if (addressType === 'p2tr' && processedSignature.length > 64) {
+        // 如果是65字节（包含sighash flag），取前64字节
+        if (processedSignature.length === 65) {
+          processedSignature = processedSignature.slice(0, 64);
+        } else {
+          throw new Error(`Invalid Schnorr signature length: ${processedSignature.length} bytes. Expected 64 or 65 bytes.`);
+        }
+      }
+      
       transaction.updateInput(
         idx,
         {
           tapScriptSig: [
             [
               {
-                pubKey: signature[1].pubkey,
-                leafHash: signature[1].tapleafHash,
+                pubKey: new Uint8Array(signature[1].pubkey),
+                leafHash: new Uint8Array(signature[1].tapleafHash || Buffer.alloc(32)),
               },
-              signature[1].signature,
+              new Uint8Array(processedSignature),
             ],
           ],
         },
         true
       );
     } else {
-      transaction.updateInput(
-        idx,
-        {
-          tapKeySig: signature[1].signature,
-        },
-        true
-      );
+      // Key path spend 或 native segwit
+      let processedSignature = signature[1].signature;
+      
+      if (addressType === 'p2tr') {
+        // Taproot key path: 使用Schnorr签名，确保是64字节
+        if (processedSignature.length > 64) {
+          if (processedSignature.length === 65) {
+            processedSignature = processedSignature.slice(0, 64);
+          } else {
+            throw new Error(`Invalid Schnorr signature length: ${processedSignature.length} bytes. Expected 64 or 65 bytes.`);
+          }
+        }
+        
+        transaction.updateInput(
+          idx,
+          {
+            tapKeySig: new Uint8Array(processedSignature),
+          },
+          true
+        );
+      } else if (addressType === 'p2wpkh') {
+        // Native SegWit: 使用ECDSA签名，保持DER格式
+        transaction.updateInput(
+          idx,
+          {
+            partialSig: [
+              [new Uint8Array(signature[1].pubkey), new Uint8Array(processedSignature)]
+            ],
+          },
+          true
+        );
+      } else {
+        // 未知类型，尝试taproot key path作为默认
+        console.warn(`Unknown address type for input ${idx}, defaulting to taproot key path`);
+        if (processedSignature.length > 64) {
+          if (processedSignature.length === 65) {
+            processedSignature = processedSignature.slice(0, 64);
+          }
+        }
+        
+        transaction.updateInput(
+          idx,
+          {
+            tapKeySig: new Uint8Array(processedSignature),
+          },
+          true
+        );
+      }
     }
   }
 
