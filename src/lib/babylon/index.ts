@@ -18,25 +18,20 @@ interface SignMessageOptions {
   derivationPath: string;
 }
 
-/**
- * 检测PSBT输入的地址类型
- */
+
 function detectInputAddressType(psbtBase64: string, inputIndex: number): 'p2tr' | 'p2wpkh' | 'unknown' {
   try {
     const psbt = new PsbtV2();
     psbt.deserialize(Buffer.from(base64.decode(psbtBase64)));
     
-    // 检查是否有taproot相关的字段
     const witnessUtxo = psbt.getInputWitnessUtxo(inputIndex);
     if (witnessUtxo) {
       const scriptPubKey = witnessUtxo.scriptPubKey;
       
-      // P2TR脚本格式: OP_1 <32-byte-pubkey> (长度34字节，以0x5120开头)
       if (scriptPubKey.length === 34 && scriptPubKey[0] === 0x51 && scriptPubKey[1] === 0x20) {
         return 'p2tr';
       }
       
-      // P2WPKH脚本格式: OP_0 <20-byte-pubkey-hash> (长度22字节，以0x0014开头)
       if (scriptPubKey.length === 22 && scriptPubKey[0] === 0x00 && scriptPubKey[1] === 0x14) {
         return 'p2wpkh';
       }
