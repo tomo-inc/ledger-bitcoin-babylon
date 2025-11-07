@@ -176,7 +176,8 @@ export {
   withdrawPathPolicy,
   slashingPathPolicy,
   stakingTxPolicy,
-  unbondingPathPolicy
+  unbondingPathPolicy,
+  expansionTxPolicy
 } from './prepare';
 
 export type {  

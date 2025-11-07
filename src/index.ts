@@ -25,6 +25,7 @@ import {
   stakingTxPolicy,
   withdrawPathPolicy,
   unbondingPathPolicy,
+  expansionTxPolicy
 } from './lib/babylon';
 
 import { PsbtV2 } from './lib/psbtv2';
@@ -49,6 +50,7 @@ export {
   unbondingPathPolicy,
   withdrawPathPolicy,
   stakingTxPolicy,
+  expansionTxPolicy,
   signPsbt,
   signMessage,
 };

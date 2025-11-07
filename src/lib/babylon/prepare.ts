@@ -2,7 +2,8 @@ import { encodeStakingTxPolicyToTLV,
          encodeSlashingTxPolicyToTLV,
          encodeUnbondPolicyToTLV,
          encodeWithdrawPolicyToTLV,
-         encodeSignMessagePolicyToTLV } from './data';
+         encodeSignMessagePolicyToTLV,
+         encodeExpansionPolicyToTLV } from './data';
 
 import AppClient from '../appClient';
 import Transport from '@ledgerhq/hw-transport';
@@ -355,4 +356,63 @@ export async function signMessagePathPolicy({
   }
   return new WalletPolicy('', descriptorTemplate, keys);
 
+}
+
+export async function expansionTxPolicy({
+  transport,
+  params,
+  derivationPath
+}: {
+  transport: Transport;
+  params: StakingTxParams;
+  derivationPath: string;
+}): Promise<WalletPolicy> {
+  if (!isFullFiveLevelPath(derivationPath)) {
+        throw new Error('The derivation path should be a full five-level path.');
+  }
+  const addressType = getAddressTypeFromPath(derivationPath);
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
+  const [masterFingerPrint, extendedPublicKey] = await _prepare(
+    transport,
+    threeLevelPath
+  );
+  const keys: string[] = [];
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for staking transactions.');
+  }
+   keys.push(
+    `[${threeLevelPath.replace(
+      'm/',
+      `${masterFingerPrint}/`
+    )}]${extendedPublicKey}`
+  );
+
+  const {
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    covenantPks: _covenantPks,
+  } = params;
+
+  const tlvBuffer = encodeExpansionPolicyToTLV(
+    derivationPath,
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    _covenantPks || []
+  );
+  const app = new AppClient(transport);
+  try {
+    await app.dataPrepare(tlvBuffer);
+  } catch (error) {
+    console.error('Error in dataPrepare:', error);
+    throw error;
+  }
+
+  return new WalletPolicy('', descriptorTemplate, keys);
 }
