@@ -3,7 +3,8 @@ import { encodeStakingTxPolicyToTLV,
          encodeUnbondPolicyToTLV,
          encodeWithdrawPolicyToTLV,
          encodeSignMessagePolicyToTLV,
-         encodeExpansionPolicyToTLV } from './data';
+         encodeExpansionPolicyToTLV,
+        encodeGetVersionTLV } from './data';
 
 import AppClient from '../appClient';
 import Transport from '@ledgerhq/hw-transport';
@@ -415,4 +416,31 @@ export async function expansionTxPolicy({
   }
 
   return new WalletPolicy('', descriptorTemplate, keys);
+}
+
+const VERSION = {
+  v1: 1,
+  v2: 2
+} as const;
+
+export async function getBbnVersion(transport: Transport): Promise<number> {
+  const app = new AppClient(transport);
+  const tlvBuffer = encodeGetVersionTLV();
+  
+  try {
+    await app.dataPrepare(tlvBuffer);
+    // 如果成功响应，说明是 v2 固件
+    console.log('[getVersion] Device responded successfully, firmware version: v2');
+    return VERSION.v2;
+  } catch (error: any) {
+    // 检查是否是 0x6d00 错误码（指令不支持）
+    if (error?.statusCode === 0x6d00 || error?.message?.includes('6d00')) {
+      console.log('[getVersion] Device returned 0x6d00 (instruction not supported), firmware version: v1');
+      return VERSION.v1;
+    }
+    
+    // 其他错误也可能表示是 v1 固件
+    console.warn('[getVersion] Error querying version, defaulting to v1:', error);
+    return VERSION.v1;
+  }
 }

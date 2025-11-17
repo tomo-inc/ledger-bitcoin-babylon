@@ -17,7 +17,6 @@ interface SignMessageOptions {
   derivationPath: string;
 }
 
-
 function detectInputAddressType(psbtBase64: string, inputIndex: number): 'p2tr' | 'p2wpkh' | 'unknown' {
   try {
     const psbt = new PsbtV2();
@@ -212,12 +211,14 @@ export async function signMessage(
       isTestnet
     });
 }
+
 export { 
   withdrawPathPolicy,
   slashingPathPolicy,
   stakingTxPolicy,
   unbondingPathPolicy,
-  expansionTxPolicy
+  expansionTxPolicy,
+  getVersion
 } from './prepare';
 
 export type {  

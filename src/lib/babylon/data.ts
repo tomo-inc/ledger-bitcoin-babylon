@@ -1,7 +1,7 @@
 
 /*
 TAG=1 LEN=2 Value
-Action Type:  2=Staking 3=Unbond 0=SLASHING 1=UNBONDING SLASHING 4=withdraw 5=sign message 6=expansion
+Action Type:  2=Staking 3=Unbond 0=SLASHING 1=UNBONDING SLASHING 4=withdraw 5=sign message 6=expansion 0x10 get version
 5=WITHDRAW 6=SIGN MESSAGE
 Action Type:                  TAG 0x77  LEN 00 01      VALUE action type
 Finality provider count:      TAG 0xf9  LEN 00 0n      VALUE count
@@ -508,5 +508,20 @@ export function encodeExpansionPolicyToTLV(
   timelockBuffer.writeUInt32BE(timelockBlocks % 0x100000000, 4); // 低32位
   buffers.push(timelockBuffer);
 
+  return Buffer.concat(buffers as Uint8Array[]);
+}
+
+/**
+ * Encodes GetVersion transaction policy parameters into a TLV (Tag-Length-Value) formatted Buffer.
+ */
+
+export function encodeGetVersionTLV(
+): Buffer {
+  const buffers: Buffer[] = [];
+
+  // Action Type: TAG 0x77 LEN 00 01 VALUE action type (1=Staking)
+  buffers.push(Buffer.from([0x77])); // TAG
+  buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
+  buffers.push(Buffer.from([0x10])); // VALUE (0x10 = GetVersion)
   return Buffer.concat(buffers as Uint8Array[]);
 }
