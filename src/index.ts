@@ -25,8 +25,10 @@ import {
   stakingTxPolicy,
   withdrawPathPolicy,
   unbondingPathPolicy,
-  expansionTxPolicy
+  expansionTxPolicy,
 } from './lib/babylon';
+
+import { getBbnVersion } from './lib/babylon/prepare';
 
 import { PsbtV2 } from './lib/psbtv2';
 
@@ -53,6 +55,7 @@ export {
   expansionTxPolicy,
   signPsbt,
   signMessage,
+  getBbnVersion,
 };
 
 export default AppClient;

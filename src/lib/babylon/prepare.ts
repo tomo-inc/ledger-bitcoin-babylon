@@ -4,7 +4,7 @@ import { encodeStakingTxPolicyToTLV,
          encodeWithdrawPolicyToTLV,
          encodeSignMessagePolicyToTLV,
          encodeExpansionPolicyToTLV,
-        encodeGetVersionTLV } from './data';
+         encodeGetVersionTLV } from './data';
 
 import AppClient from '../appClient';
 import Transport from '@ledgerhq/hw-transport';

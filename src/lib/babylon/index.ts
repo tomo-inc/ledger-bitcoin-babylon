@@ -218,7 +218,7 @@ export {
   stakingTxPolicy,
   unbondingPathPolicy,
   expansionTxPolicy,
-  getVersion
+  getBbnVersion
 } from './prepare';
 
 export type {  
