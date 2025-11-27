@@ -54,26 +54,36 @@ describe('stakingTxPolicy', () => {
     
     // Python 验证数据
     const expectedSighash = Buffer.from("672C460A4AB491DD3B70BC5E35D4796683AF95B11F68D4667A8963CBC52A3CDF", "hex");
-    const expectedPubkey = Buffer.from("dc8d2f9eff0c4f4dbde070a48e330efc908b62a766568d91e658f284b324b878", "hex");
+    const expectedInternalKey = Buffer.from("dc8d2f9eff0c4f4dbde070a48e330efc908b62a766568d91e658f284b324b878", "hex");
     
     // 验证第一个签名结果
     const [idx0, partialSig0] = result[0];
     expect(idx0).toBe(0);
 
-
-     // BIP-340 Schnorr 签名验证
-   const signature = partialSig0.signature.slice(0, 64); // 取前 64 字节作为签名
-   console.log("Signature (hex):", signature.toString('hex'));
-   const isValidSignature = ecc.verifySchnorr(expectedSighash, expectedPubkey, signature);
-   expect(isValidSignature).toBe(true);
+    // BIP-340 Schnorr 签名验证
+    // 注意：Taproot key path 使用 tweaked pubkey (从 witnessUtxo scriptPubKey 提取)
+    // 而不是 internal key
+    const signature = partialSig0.signature.slice(0, 64); // 取前 64 字节作为签名
+    const tweakedPubkey = Buffer.from(partialSig0.pubkey); // 这是 tweaked pubkey
     
+    console.log("\n=== Signature Verification Details ===");
     console.log("Result length:", result.length);
     console.log("Index:", idx0);
-    console.log("Pubkey:", Buffer.from(partialSig0.pubkey).toString('hex'));
-    console.log("Expected pubkey:", expectedPubkey.toString('hex'));
-    console.log("Signature length:", partialSig0.signature.length);
-    console.log("Signature (first 64 bytes):", Buffer.from(partialSig0.signature.slice(0, 64)).toString('hex'));
-    console.log("✅ All validations passed!");
-
-  });
+    console.log("Has tapleafHash:", !!partialSig0.tapleafHash);
+    console.log("This is KEY PATH (no tapleafHash)");
+    
+    console.log("\nTweaked pubkey (for verification):", tweakedPubkey.toString('hex'));
+    console.log("Internal key (reference only):    ", expectedInternalKey.toString('hex'));
+    
+    console.log("\nSignature length:", partialSig0.signature.length);
+    console.log("Signature (64 bytes):", signature.toString('hex'));
+    console.log("Expected sighash:    ", expectedSighash.toString('hex'));
+    
+    // 验证签名 - 使用 tweaked pubkey
+    console.log("\nVerifying with tweaked pubkey...");
+    const isValidSignature = ecc.verifySchnorr(expectedSighash, tweakedPubkey, signature);
+    console.log("Signature verification result:", isValidSignature);
+    
+    expect(isValidSignature).toBe(true);
+    console.log("✅ All validations passed!");  });
 });

@@ -1,7 +1,8 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
 import { AppClient, PsbtV2 } from '..';
 import { stakingTxPolicy } from '../lib/babylon/index';
-import { ec as EC } from 'elliptic';
+import * as bitcoin from 'bitcoinjs-lib';
+import * as ecc from 'tiny-secp256k1';
 
 describe('stakingTxPolicy', () => {
   let transport: any;
@@ -14,14 +15,13 @@ describe('stakingTxPolicy', () => {
 
   afterAll(async () => {
     if (transport) await transport.close();
-    setTimeout(() => process.exit(0), 1000);
   });
 
 
   it('should sign native segwit for stake', async () => {
     const params = {
       timelockBlocks: 64000,
-      finalityProviders: ['d66124f8f42fd83e4c901a100ae3b5d706ef6cfd217b04bc64152e739a30c41e'],
+      finalityProviders: ['d23c2c25e1fcf8fd1c21b9a402c19e2e309e531e45e92fb1e9805b6056b0cc76'],
       covenantThreshold: 6,
       covenantPks: [
         '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
@@ -42,7 +42,7 @@ describe('stakingTxPolicy', () => {
       derivationPath: `m/84'/1'/0'/0/0`,
     });
     const psbtBuf = Buffer.from(
-       "cHNidP8BAH0CAAAAAaEtHx7dpPIS1RLs5LOtnYXmhBKx5eRgnL1yeeWlS6iVAAAAAAD/////AkBCDwAAAAAAIlEgO0v4HIc+jMw1cCYcWnQXJOyy2tGq1peFMCdNKD6bmFEYBT0AAAAAABYAFDXG4N1tPISxa6iF3Kc6yGPQtZPsAAAAAAABAR9AS0wAAAAAABYAFBNH6CoDe127OM+MR1nyQrH1x+CaIgYCfLddNLAFxOufYrvyxFfXY46BPnV+/OyPpoZ32VC2NmIY9azC/VQAAIABAACAAAAAgAAAAAAAAAAAAAAA",
+       "cHNidP8BAH0CAAAAAftH5TYiqKRA11SH2AYDNhLau1BnpuD4Ix1v7KOBnqJEAQAAAAD/////AnARAQAAAAAAIlEgOmYCuc8dH9hbNqg0qhqmboANe37xYmQ+jPc10iilT8kVrxoAAAAAABYAFBNH6CoDe127OM+MR1nyQrH1x+CaAAAAAAABAR9IwRsAAAAAABYAFBNH6CoDe127OM+MR1nyQrH1x+CaAAAA",
        "base64"
     );
     const psbt = new PsbtV2();
@@ -58,54 +58,64 @@ describe('stakingTxPolicy', () => {
     //expect(result.length).toEqual(1);
     
     // Python 验证数据
-    const expectedSighash = Buffer.from("172C927D125C64A7241660276BE2E6C2782E0373EF99A4ACA122F8E2628D18E9", "hex");
-    const expectedPubkey = Buffer.from("027CB75D34B005C4EB9F62BBF2C457D7638E813E757EFCEC8FA68677D950B63662", "hex");
+    const expectedSighash = Buffer.from(
+      'DCFFD40872E37A7692EE914F6E1C477329AF3ACD6C72419386565A3FBA650C4A',
+      'hex',
+    );
+    const expectedPubkey = Buffer.from(
+      '027CB75D34B005C4EB9F62BBF2C457D7638E813E757EFCEC8FA68677D950B63662',
+      'hex',
+    );
     
     // 验证第一个签名结果
     const [idx0, partialSig0] = result[0];
     expect(idx0).toBe(0);
-    let signature = partialSig0.signature;  // ECDSA签名通常是DER格式
-    // const derLen = signature[1] + 1; // DER格式的长度
-    // signature = signature.slice(0, derLen);
-    // console.log("derlen:", derLen);
-    console.log("Signature (hex):", signature.toString('hex'));
-    console.log("Pubkey (hex):", Buffer.from(partialSig0.pubkey).toString('hex'));
-    console.log("Expected pubkey (hex):", expectedPubkey.toString('hex'));
-    console.log("Sighash (hex):", expectedSighash.toString('hex'));
+    const signature: Buffer = partialSig0.signature as Buffer;
+    console.log('Signature (hex):', signature.toString('hex'));
+    console.log('Pubkey (hex):', Buffer.from(partialSig0.pubkey).toString('hex'));
+    console.log('Expected pubkey (hex):', expectedPubkey.toString('hex'));
+    console.log('Sighash (hex):', expectedSighash.toString('hex'));
 
-    // try {
-    //   const decoded = script.signature.decode(signature);
-    //   console.log("Decoded signature (hex):", decoded.signature.toString('hex'));
-    //   console.log("Decoded hashType:", decoded.hashType);
-    // } catch (e) {
-    //   console.error("DER decode error:", e);
-    // }
-    const ec = new EC('secp256k1');
-    const key = ec.keyFromPublic(expectedPubkey.toString('hex'), 'hex');
-    const derSignature = signature; // 你的 DER 格式
-    const isValid = key.verify(expectedSighash, derSignature);
-    // const ec = new EC('secp256k1');
-    // const key = ec.keyFromPublic(expectedPubkey.toString('hex'), 'hex');
+    // 用 bitcoinjs-lib 解码 DER 签名（输入需包含末尾的 sighashType）
+    const decoded = bitcoin.script.signature.decode(signature);
+    console.log('Decoded signature (hex):', decoded.signature.toString('hex'));
+    console.log('Decoded hashType:', decoded.hashType);
 
-    // // 解析 DER 签名为 elliptic 的 Signature 对象
-    // const sigObj = Signature.fromDER(signature);
+    // 基于 PSBT 计算实际的 BIP-143 sighash（P2WPKH）
+    const tx = new bitcoin.Transaction();
+    tx.version = psbt.getGlobalTxVersion();
+    const locktime = psbt.getGlobalFallbackLocktime();
+    if (locktime !== undefined) tx.locktime = locktime;
 
-    // // 用 r/s 对象验证
-    // const isValid = key.verify(expectedSighash, sigObj);
+    const inputCount = psbt.getGlobalInputCount();
+    for (let i = 0; i < inputCount; i++) {
+      const prevHash = psbt.getInputPreviousTxid(i);
+      const index = psbt.getInputOutputIndex(i);
+      const seq = psbt.getInputSequence(i);
+      tx.addInput(prevHash, index, seq);
+    }
+    const outputCount = psbt.getGlobalOutputCount();
+    for (let i = 0; i < outputCount; i++) {
+      const value = psbt.getOutputAmount(i);
+      const script = psbt.getOutputScript(i);
+      tx.addOutput(script, value);
+    }
 
-    // const isValidSignature = ecc.verify(expectedSighash, expectedPubkey, signature);
-    // expect(isValidSignature).toBe(true);
-    // const keyPair = ECPair.fromPublicKey(expectedPubkey);
-    // const isValid = keyPair.verify(expectedSighash, signature);
-    // console.log("bitcoinjs-lib verify:", isValid);
-    console.log("elliptic verify:", isValid);
-    console.log("Result length:", result.length);
-    console.log("Index:", idx0);
-    console.log("Pubkey:", Buffer.from(partialSig0.pubkey).toString('hex'));
-    console.log("Expected pubkey:", expectedPubkey.toString('hex'));
-    console.log("Signature length:", partialSig0.signature.length);
-    console.log("Signature (first 64 bytes):", Buffer.from(partialSig0.signature.slice(0, 64)).toString('hex'));
-    console.log("✅ All validations passed!");
+    const utxo0 = psbt.getInputWitnessUtxo(0);
+    if (!utxo0) throw new Error('Missing witnessUtxo for input 0');
+    const spk = utxo0.scriptPubKey;
+    if (!(spk.length === 22 && spk[0] === 0x00 && spk[1] === 0x14)) {
+      throw new Error('Input 0 is not P2WPKH');
+    }
+    const h160 = spk.slice(2);
+    const scriptCode = bitcoin.payments.p2pkh({ hash: h160 }).output!;
+    const computedSighash = tx.hashForWitnessV0(0, scriptCode, utxo0.amount, decoded.hashType);
+    console.log('Computed sighash (hex):', computedSighash.toString('hex'));
+
+    // 使用 tiny-secp256k1 直接验证 (decoded.signature 是 64 字节 r||s)
+    const isValid = ecc.verify(computedSighash, expectedPubkey, decoded.signature);
+    console.log('tiny-secp256k1 verify:', isValid);
+    expect(isValid).toBe(true);
 
   });
 });
