@@ -1,13 +1,8 @@
 import AppClient, { PartialSignature } from './lib/appClient';
 
 import type {
-  SlashingPolicy,
   SlashingParams,
-  StakingTxPolicy,
   StakingTxParams,
-  TimelockPolicy,
-  TimelockParams,
-  UnbondingPolicy,
   UnbondingParams,
 } from './lib/babylon';
 
@@ -24,27 +19,23 @@ import {
 } from './lib/policy';
 
 import {
-  computeLeafHash,
   signMessage,
-  tryParsePsbt,
   signPsbt,
   slashingPathPolicy,
   stakingTxPolicy,
-  timelockPathPolicy,
+  withdrawPathPolicy,
   unbondingPathPolicy,
+  expansionTxPolicy,
 } from './lib/babylon';
+
+import { getBbnVersion } from './lib/babylon/prepare';
 
 import { PsbtV2 } from './lib/psbtv2';
 
 export {
   AddressType,
-  SlashingPolicy,
   SlashingParams,
-  StakingTxPolicy,
   StakingTxParams,
-  TimelockPolicy,
-  TimelockParams,
-  UnbondingPolicy,
   UnbondingParams,
   MessageSigningProtocols,
   SignedMessage,
@@ -57,14 +48,14 @@ export {
   AppClient,
   PsbtV2,
   PartialSignature,
-  signMessage,
-  computeLeafHash,
   slashingPathPolicy,
   unbondingPathPolicy,
-  timelockPathPolicy,
+  withdrawPathPolicy,
   stakingTxPolicy,
+  expansionTxPolicy,
   signPsbt,
-  tryParsePsbt,
+  signMessage,
+  getBbnVersion,
 };
 
 export default AppClient;

@@ -1,6 +1,6 @@
 import Transport from '@ledgerhq/hw-transport-node-speculos-http';
-import { AppClient,DefaultWalletPolicy,PsbtV2 } from '..';
-import { stakingTxPolicy } from '../lib/babylon/index';
+import { AppClient,PsbtV2 } from '..';
+import { expansionTxPolicy } from '../lib/babylon/index';
 import * as ecc from 'tiny-secp256k1';
 
 describe('stakingTxPolicy', () => {
@@ -17,11 +17,10 @@ describe('stakingTxPolicy', () => {
     setTimeout(() => process.exit(0), 1000);
   });
 
-
-  it('should send tlv data for stake', async () => {
+  it('should sign expansion', async () => {
     const params = {
-      timelockBlocks: 1008,
-      finalityProviders: ['d66124f8f42fd83e4c901a100ae3b5d706ef6cfd217b04bc64152e739a30c41e'],
+      timelockBlocks: 64000,
+      finalityProviders: ['d23c2c25e1fcf8fd1c21b9a402c19e2e309e531e45e92fb1e9805b6056b0cc76'],
       covenantThreshold: 6,
       covenantPks: [
         '0aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25',
@@ -33,48 +32,28 @@ describe('stakingTxPolicy', () => {
         'd21faf78c6751a0d38e6bd8028b907ff07e9a869a43fc837d6b3f8dff6119a36',
         'f5199efae3f28bb82476163a7e458c7ad445d9bffb0682d10d3bdb2cb41f8e8e',
         'fa9d882d45f4060bdb8042183828cd87544f1ea997380e586cab77d5fd698737',
-      ],
-      slashingFeeSat: 2000,
-      leafHash: Buffer.from('ed429f93af8bb724a9f5066248b32d945fdd1c12f7f59a33f4f83b6565716750', 'hex'),
-      slashingPkScriptHex: "00145be12624d08a2b424095d7c07221c33450d14bf1",
+      ]
     };
 
-    const policy = await stakingTxPolicy({
-      policyName: 'Staking transaction',
+    const policy = await expansionTxPolicy({
       transport,
       params,
-      derivationPath: `m/86'/1'/0'`,
-      displayLeafHash: false,
-      isTestnet: true,
+      derivationPath: `m/86'/1'/0'/0/0`,
     });
-
-    expect(policy).toBeDefined();
-    expect(policy.descriptorTemplate).toBe('tr(@0/**)');
-  });
-
-
-  it("can sign stake", async () => {
-    jest.setTimeout(30000);
-    // psbt from test_sign_psbt_singlesig_wpkh_2to2 in the main test suite, converted to PSBTv2
-    const psbtBuf = Buffer.from(
-       "cHNidP8BAH0CAAAAAU5oPucfQQOAdrEZwJODBvpzHfaA/orEXxwbxelbMexgAAAAAAD/////AsQJAAAAAAAAFgAUW+EmJNCKK0JAldfAciHDNFDRS/EEpgAAAAAAACJRICyVutUKY9E6qBjfjktoZBga2/RyCoiq+OPBI1ugik2fAAAAAAABAStQwwAAAAAAACJRINdj3mtHHjBWQbpB1lxngujLz/bgjoPaqw2hJ1u8n6rQQhXBUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsCJtgX5iDHD5SbZ6yF5ZRRSk4qMD/f16u7MthJR1dRt6/15ASDcjS+e/wxPTb3gcKSOMw78kItip2ZWjZHmWPKEsyS4eK0g1mEk+PQv2D5MkBoQCuO11wbvbP0hewS8ZBUuc5owxB6tIAruBQmxbbccmZI4pIJ9uUVSaFmxPJVIerRnJTV8mp8lrCARPDoyqdMgtyGQoEoCCg2zl27zaXJnMljpo4o2Tz3DsLogF5Ic8VbMtOc9Qo+ZbtEbJFMT434nyXisTSzCHspGcuS6IDu5PfyLYYh9dx82MOmmPpfLr8/MeFVqR034OjGg74mcuiBAr69HxP+lbehkENjke6ortvBLYE9OokMjc33cP+CS37ogeacf/XHFA+8uL5G8z8j82nlG9GU87w2fPd4geV7zufC6INIfr3jGdRoNOOa9gCi5B/8H6ahppD/IN9az+N/2EZo2uiD1GZ764/KLuCR2Fjp+RYx61EXZv/sGgtENO9sstB+Ojrog+p2ILUX0BgvbgEIYOCjNh1RPHqmXOA5YbKt31f1phze6VpzAARcgUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsAAAAA=",
+      const psbtBuf = Buffer.from(
+       "cHNidP8BALICAAAAAubS+4SdAHvAiqU4PCsFyr5neTLjNAuS0zolPBi5ZmaNAAAAAAD/////MTyf8nQegzf16aMXqTlfNa4lsoi656fTa1n6z7WD9WgBAAAAAP////8CYOoAAAAAAAAiUSC+4SCoHZdl75p94F7xkvA0JEDuGrG6PGlTXk0Mk5P60aqxAAAAAAAAIlEgdA7mTkUuO67hJ7A8GVvMIa0+3e0u8mxa9IPZxWME0eUAAAAAAAEBK2DqAAAAAAAAIlEgvuEgqB2XZe+afeBe8ZLwNCRA7hqxujxpU15NDJOT+tFiFcFQkpt0waBJVLeLS2A16XpeB4paDyjsltVHv+6azoA6wGiUOxKox1UcaYkUfLw1P/gRozOyIAYscJZUYYhS14qO7WLOBOR2DLfcS2FXnhYLyDSDei74a1DrKfwNlVI2ikX9VwEg3I0vnv8MT0294HCkjjMO/JCLYqdmVo2R5ljyhLMkuHitIAruBQmxbbccmZI4pIJ9uUVSaFmxPJVIerRnJTV8mp8lrCARPDoyqdMgtyGQoEoCCg2zl27zaXJnMljpo4o2Tz3DsLogF5Ic8VbMtOc9Qo+ZbtEbJFMT434nyXisTSzCHspGcuS6IDu5PfyLYYh9dx82MOmmPpfLr8/MeFVqR034OjGg74mcuiBAr69HxP+lbehkENjke6ortvBLYE9OokMjc33cP+CS37ogeacf/XHFA+8uL5G8z8j82nlG9GU87w2fPd4geV7zufC6INIfr3jGdRoNOOa9gCi5B/8H6ahppD/IN9az+N/2EZo2uiD1GZ764/KLuCR2Fjp+RYx61EXZv/sGgtENO9sstB+Ojrog+p2ILUX0BgvbgEIYOCjNh1RPHqmXOA5YbKt31f1phze6VpzAARcgUJKbdMGgSVS3i0tgNel6XgeKWg8o7JbVR7/ums6AOsAAAQErb7MAAAAAAAAiUSB0DuZORS47ruEnsDwZW8whrT7d7S7ybFr0g9nFYwTR5QEXINyNL57/DE9NveBwpI4zDvyQi2KnZlaNkeZY8oSzJLh4AAAA",
        "base64"
-    );
-
-    const walletPolicy = new DefaultWalletPolicy(
-      "tr(@0/**)",
-      "[f5acc2fd/86'/1'/0']tpubDDKYE6BREvDsSWMazgHoyQWiJwYaDDYPbCFjYxN3HFXJP5fokeiK4hwK5tTLBNEDBwrDXn8cQ4v9b2xdW62Xr5yxoQdMu1v6c7UDXYVH27U"
     );
 
     const psbt = new PsbtV2();
     psbt.deserialize(psbtBuf);
-    const result = await app.signPsbt(psbt, walletPolicy, null, () => {});
+    const result = await app.signPsbt(psbt, policy, null, () => {});
 
     // 验证结果长度
-    expect(result.length).toEqual(1);
+    expect(result.length).toEqual(2);
     
     // Python 验证数据
-    const expectedSighash = Buffer.from("BA111E858EED59BA9527273BC8DFB047AE96BE59B6B4EC3769F6C35E5135134C", "hex");
+    const expectedSighash = Buffer.from("BFB4940019DFDCE8D4CC8FB4FCD6CCB319C4C7A88A992E243887CBC73A6130D2", "hex");
     const expectedLeafHash = Buffer.from("ed429f93af8bb724a9f5066248b32d945fdd1c12f7f59a33f4f83b6565716750", "hex");
     const expectedPubkey = Buffer.from("dc8d2f9eff0c4f4dbde070a48e330efc908b62a766568d91e658f284b324b878", "hex");
     
@@ -85,7 +64,7 @@ describe('stakingTxPolicy', () => {
 
      // BIP-340 Schnorr 签名验证
    const signature = partialSig0.signature.slice(0, 64); // 取前 64 字节作为签名
-  console.log("Signature (hex):", signature.toString('hex'));
+   console.log("Signature (hex):", signature.toString('hex'));
    const isValidSignature = ecc.verifySchnorr(expectedSighash, expectedPubkey, signature);
    expect(isValidSignature).toBe(true);
     
@@ -98,9 +77,6 @@ describe('stakingTxPolicy', () => {
     console.log("Expected pubkey:", expectedPubkey.toString('hex'));
     console.log("Signature length:", partialSig0.signature.length);
     console.log("Signature (first 64 bytes):", Buffer.from(partialSig0.signature.slice(0, 64)).toString('hex'));
-    
-    // 注意：实际的 Schnorr 签名验证需要实现 BIP-340 算法
-    // 这里我们只验证了数据格式和关键字段
     console.log("✅ All validations passed!");
-    });
+  });
 });

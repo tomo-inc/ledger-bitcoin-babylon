@@ -1,11 +1,16 @@
 import { encodeStakingTxPolicyToTLV, 
          encodeSlashingTxPolicyToTLV,
          encodeUnbondPolicyToTLV,
-         encodeWithdrawPolicyToTLV } from './data';
+         encodeWithdrawPolicyToTLV,
+         encodeSignMessagePolicyToTLV,
+         encodeExpansionPolicyToTLV,
+         encodeGetVersionTLV } from './data';
 
 import AppClient from '../appClient';
 import Transport from '@ledgerhq/hw-transport';
 import { WalletPolicy } from '../policy';
+import { isFullFiveLevelPath, getAddressTypeFromPath } from './utils';
+import { AddressType } from './types'
 
 async function _prepare(
   transport: Transport,
@@ -18,40 +23,26 @@ async function _prepare(
   return [masterFingerPrint, extendedPublicKey];
 }
 
-
-export type SlashingPolicy =
-  | undefined
-  | 'Consent to slashing'
-  | 'Consent to unbonding slashing';
 export type SlashingParams = {
-  leafHash: Buffer;
   timelockBlocks: number;
   finalityProviders: string[];
   covenantThreshold: number;
-  covenantPks?: string[];
+  covenantPks: string[];
   slashingPkScriptHex: string;
   slashingFeeSat: number;
 };
 
 export async function slashingPathPolicy({
-  policyName = 'Consent to slashing',
   transport,
   params,
   derivationPath,
-  displayLeafHash = true,
-  isTestnet = false,
+  isUnbonding
 }: {
-  policyName?: SlashingPolicy;
   transport: Transport;
   params: SlashingParams;
-  derivationPath?: string;
-  displayLeafHash?: boolean;
-  isTestnet?: boolean;
+  derivationPath: string;
+  isUnbonding: boolean;
 }): Promise<WalletPolicy> {
-  derivationPath = derivationPath
-    ? derivationPath
-    : `m/86'/${isTestnet ? 1 : 0}'/0'`;
-
   const {
     timelockBlocks,
     finalityProviders,
@@ -60,26 +51,42 @@ export async function slashingPathPolicy({
     slashingPkScriptHex,
     slashingFeeSat,
   } = params;
+  if (!isFullFiveLevelPath(derivationPath)) {
+        throw new Error('The derivation path should be a full five-level path.');
+  }
+
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
-    derivationPath
+    threeLevelPath
   );
-  const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
+  
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
+   const keys: string[] = [];
    keys.push(
-    `[${derivationPath.replace(
+    `[${threeLevelPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
 
    const tlvBuffer = encodeSlashingTxPolicyToTLV(
+    derivationPath,
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
     _covenantPks,
     slashingPkScriptHex,
-    slashingFeeSat
+    slashingFeeSat,
+    isUnbonding
   );
   const app = new AppClient(transport);
   try {
@@ -89,52 +96,45 @@ export async function slashingPathPolicy({
     throw error;
   }
 
-  return new WalletPolicy(policyName, descriptorTemplate, keys);
+  return new WalletPolicy('', descriptorTemplate, keys);
 }
 
-export type UnbondingPolicy = undefined | 'Unbonding';
-export type UnbondingParams = {
-  leafHash: Buffer;
-  timelockBlocks: number;
-  finalityProviders: string[];
-  covenantThreshold: number;
-  covenantPks?: string[];
-  unbondingFeeSat: number;
-};
-
-
-export type StakingTxPolicy = undefined | 'Staking transaction';
 export type StakingTxParams = {
   timelockBlocks: number;
   finalityProviders: string[];
   covenantThreshold: number;
-  covenantPks?: string[];
+  covenantPks: string[];
 };
 
 export async function stakingTxPolicy({
-  policyName = 'Staking transaction',
   transport,
   params,
-  derivationPath,
-  isTestnet = false,
+  derivationPath
 }: {
-  policyName?: StakingTxPolicy;
   transport: Transport;
   params: StakingTxParams;
-  derivationPath?: string;
-  isTestnet?: boolean;
+  derivationPath: string;
 }): Promise<WalletPolicy> {
-  derivationPath = derivationPath
-    ? derivationPath
-    : `m/86'/${isTestnet ? 1 : 0}'/0'`;
-    const [masterFingerPrint, extendedPublicKey] = await _prepare(
+  if (!isFullFiveLevelPath(derivationPath)) {
+        throw new Error('The derivation path should be a full five-level path.');
+  }
+  const addressType = getAddressTypeFromPath(derivationPath);
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
+  const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
-    derivationPath
+    threeLevelPath
   );
   const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for staking transactions.');
+  }
    keys.push(
-    `[${derivationPath.replace(
+    `[${threeLevelPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
@@ -148,6 +148,7 @@ export async function stakingTxPolicy({
   } = params;
 
   const tlvBuffer = encodeStakingTxPolicyToTLV(
+    derivationPath,
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
@@ -161,28 +162,27 @@ export async function stakingTxPolicy({
     throw error;
   }
 
-  return new WalletPolicy(policyName, descriptorTemplate, keys);
+  return new WalletPolicy('', descriptorTemplate, keys);
 }
 
+export type UnbondingParams = {
+  timelockBlocks: number;
+  finalityProviders: string[];
+  covenantThreshold: number;
+  covenantPks?: string[];
+  unbondingFeeSat: number;
+};
+
 export async function unbondingPathPolicy({
-  policyName = 'Unbonding',
   transport,
   params,
   derivationPath,
-  displayLeafHash = true,
-  isTestnet = false,
 }: {
-  policyName?: UnbondingPolicy;
   transport: Transport;
   params: UnbondingParams;
   derivationPath?: string;
   displayLeafHash?: boolean;
-  isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-  derivationPath = derivationPath
-    ? derivationPath
-    : `m/86'/${isTestnet ? 1 : 0}'/0'`;
-
   const {
     timelockBlocks,
     finalityProviders,
@@ -190,20 +190,34 @@ export async function unbondingPathPolicy({
     covenantPks: _covenantPks,
     unbondingFeeSat,
   } = params;
+  if (!isFullFiveLevelPath(derivationPath)) {
+        throw new Error('The derivation path should be a full five-level path.');
+  }
+
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
-    derivationPath
+    threeLevelPath
   );
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
   const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
    keys.push(
-    `[${derivationPath.replace(
+    `[${threeLevelPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
 
    const tlvBuffer = encodeUnbondPolicyToTLV(
+    derivationPath,
     timelockBlocks,
     finalityProviders,
     covenantThreshold,
@@ -218,51 +232,55 @@ export async function unbondingPathPolicy({
     throw error;
   }
 
-  return new WalletPolicy(policyName, descriptorTemplate, keys);
+  return new WalletPolicy('', descriptorTemplate, keys);
 }
 
-export type TimelockPolicy = undefined | 'Withdraw';
-export type TimelockParams = {
-  leafHash: Buffer;
+export type WithdrawParams = {
   timelockBlocks: number;
 };
 
-export async function timelockPathPolicy({
-  policyName = 'Withdraw',
+export async function withdrawPathPolicy({
   transport,
   params,
   derivationPath,
-  displayLeafHash = true,
-  isTestnet = false,
 }: {
-  policyName?: TimelockPolicy;
   transport: Transport;
-  params: TimelockParams;
+  params: WithdrawParams;
   derivationPath?: string;
   displayLeafHash?: boolean;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-  derivationPath = derivationPath
-    ? derivationPath
-    : `m/86'/${isTestnet ? 1 : 0}'/0'`;
-
   const {
     timelockBlocks,
   } = params;
+  if (!isFullFiveLevelPath(derivationPath)) {
+      throw new Error('The derivation path should be a full five-level path.');
+  }
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
-    derivationPath
+    threeLevelPath
   );
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
+
   const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
    keys.push(
-    `[${derivationPath.replace(
+    `[${threeLevelPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
 
    const tlvBuffer = encodeWithdrawPolicyToTLV(
+    derivationPath,
     timelockBlocks
   );
   const app = new AppClient(transport);
@@ -273,53 +291,124 @@ export async function timelockPathPolicy({
     throw error;
   }
 
-  return new WalletPolicy(policyName, descriptorTemplate, keys);
+  return new WalletPolicy('', descriptorTemplate, keys);
 
 }
 
-export type SignMessagePolicy = undefined | 'Sign message';
 export type SignMessageParams = {
-  leafHash: Buffer;
-  timelockBlocks: number;
+  message: string;
+  pubkey: Buffer;
 };
 
 export async function signMessagePathPolicy({
-  policyName = 'Sign message',
   transport,
   params,
-  derivationPath,
-  displayLeafHash = true,
-  isTestnet = false,
+  derivationPath
 }: {
-  policyName?: SignMessagePolicy;
   transport: Transport;
-  params: TimelockParams;
-  derivationPath?: string;
-  displayLeafHash?: boolean;
+  params: SignMessageParams;
+  derivationPath: string;
   isTestnet?: boolean;
 }): Promise<WalletPolicy> {
-  derivationPath = derivationPath
-    ? derivationPath
-    : `m/86'/${isTestnet ? 1 : 0}'/0'`;
-
+  if (!isFullFiveLevelPath(derivationPath)) {
+        throw new Error('The derivation path should be a full five-level path.');
+  }
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
   const {
-    timelockBlocks,
+    message,
+    pubkey,
   } = params;
   const [masterFingerPrint, extendedPublicKey] = await _prepare(
     transport,
-    derivationPath
+    threeLevelPath
   );
   const keys: string[] = [];
-  const descriptorTemplate = "tr(@0/**)";
+ 
+  const addressType = getAddressTypeFromPath(derivationPath);
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for slashing transactions.');
+  }
+  console.log("Derivation Path for Sign Message Policy:", derivationPath);
+  console.log("descriptorTemplate:", descriptorTemplate);
+  
+  keys.push(
+    `[${threeLevelPath.replace(
+      'm/',
+      `${masterFingerPrint}/`
+    )}]${extendedPublicKey}`
+  );
+  if (message.length == 0 || message.length > 128) {
+      throw new Error('The message should be a non-empty string with a maximum length of 128 characters.');
+  }
+  console.log("message:", message);
+  const tlvBuffer = encodeSignMessagePolicyToTLV(
+    derivationPath,
+    Buffer.from(message),
+    pubkey
+  );
+  const app = new AppClient(transport);
+  try {
+    await app.dataPrepare(tlvBuffer);
+  } catch (error) {
+    console.error('Error in dataPrepare:', error);
+    throw error;
+  }
+  return new WalletPolicy('', descriptorTemplate, keys);
+
+}
+
+export async function expansionTxPolicy({
+  transport,
+  params,
+  derivationPath
+}: {
+  transport: Transport;
+  params: StakingTxParams;
+  derivationPath: string;
+}): Promise<WalletPolicy> {
+  if (!isFullFiveLevelPath(derivationPath)) {
+        throw new Error('The derivation path should be a full five-level path.');
+  }
+  const addressType = getAddressTypeFromPath(derivationPath);
+  const threeLevelPath = derivationPath.split('/').slice(0, 4).join('/');
+  const [masterFingerPrint, extendedPublicKey] = await _prepare(
+    transport,
+    threeLevelPath
+  );
+  const keys: string[] = [];
+  let descriptorTemplate;
+  if(addressType === AddressType.p2wpkh) {
+    descriptorTemplate = "wpkh(@0/**)";
+  } else if(addressType === AddressType.p2tr) {
+    descriptorTemplate = "tr(@0/**)";
+  } else {
+    throw new Error('Only p2tr and segwit address types are supported for staking transactions.');
+  }
    keys.push(
-    `[${derivationPath.replace(
+    `[${threeLevelPath.replace(
       'm/',
       `${masterFingerPrint}/`
     )}]${extendedPublicKey}`
   );
 
-   const tlvBuffer = encodeWithdrawPolicyToTLV(
-    timelockBlocks
+  const {
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    covenantPks: _covenantPks,
+  } = params;
+
+  const tlvBuffer = encodeExpansionPolicyToTLV(
+    derivationPath,
+    timelockBlocks,
+    finalityProviders,
+    covenantThreshold,
+    _covenantPks || []
   );
   const app = new AppClient(transport);
   try {
@@ -329,6 +418,32 @@ export async function signMessagePathPolicy({
     throw error;
   }
 
-  return new WalletPolicy(policyName, descriptorTemplate, keys);
+  return new WalletPolicy('', descriptorTemplate, keys);
+}
 
+const VERSION = {
+  v1: 1,
+  v2: 2
+} as const;
+
+export async function getBbnVersion(transport: Transport): Promise<number> {
+  const app = new AppClient(transport);
+  const tlvBuffer = encodeGetVersionTLV();
+  
+  try {
+    await app.dataPrepare(tlvBuffer);
+    // 如果成功响应，说明是 v2 固件
+    console.log('[getVersion] Device responded successfully, firmware version: v2');
+    return VERSION.v2;
+  } catch (error: any) {
+    // 检查是否是 0x6d00 错误码（指令不支持）
+    if (error?.statusCode === 0x6d00 || error?.message?.includes('6d00')) {
+      console.log('[getVersion] Device returned 0x6d00 (instruction not supported), firmware version: v1');
+      return VERSION.v1;
+    }
+    
+    // 其他错误也可能表示是 v1 固件
+    console.warn('[getVersion] Error querying version, defaulting to v1:', error);
+    return VERSION.v1;
+  }
 }
