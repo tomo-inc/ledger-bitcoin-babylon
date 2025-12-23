@@ -36,10 +36,12 @@ export async function slashingPathPolicy({
   transport,
   params,
   derivationPath,
+  isUnbonding
 }: {
   transport: Transport;
   params: SlashingParams;
   derivationPath: string;
+  isUnbonding: boolean;
 }): Promise<WalletPolicy> {
   const {
     timelockBlocks,
@@ -83,7 +85,8 @@ export async function slashingPathPolicy({
     covenantThreshold,
     _covenantPks,
     slashingPkScriptHex,
-    slashingFeeSat
+    slashingFeeSat,
+    isUnbonding
   );
   const app = new AppClient(transport);
   try {
