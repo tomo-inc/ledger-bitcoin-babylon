@@ -143,7 +143,8 @@ export function encodeSlashingTxPolicyToTLV(
   covenantThreshold: number,
   covenantPks: string[],
   slashingPkScriptHex: string,
-  fee: number
+  fee: number,
+  isUnbonding: boolean = false
 ): Buffer {
   if (!covenantPks) {
     throw new Error('covenantPks is required');
@@ -153,7 +154,11 @@ export function encodeSlashingTxPolicyToTLV(
   // Action Type: TAG 0x77 LEN 00 01 VALUE action type (0=SLASHING)
   buffers.push(Buffer.from([0x77])); // TAG
   buffers.push(Buffer.from([0x00, 0x01])); // LEN (2 bytes)
-  buffers.push(Buffer.from([0x00])); // VALUE (0 = SLASHING)
+  if (isUnbonding) {
+    buffers.push(Buffer.from([0x01])); // VALUE (1 = unbonding SLASHING)
+  }else{
+    buffers.push(Buffer.from([0x00])); // VALUE (0 = SLASHING)
+  }
 
   const pathArray = parseBip32Path(bip32Path);
   const pathBuffer = Buffer.alloc(4 * pathArray.length);
